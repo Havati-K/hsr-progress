@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font-family:system-ui,sans-serif;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>붕스 종결 진척도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* 레이아웃: 상단 입력 2칸(내 데이터 / 기준 시트) → 요약 띠 → 캐릭터 카드 격자. 숫자는 고정폭, 상태는 색 띠·O/X 칩 */
+:root{
+  --bg:#eef0f6; --surface:#ffffff; --sunk:#f5f6fa; --ink:#1a1c2e; --muted:#5b6080; --line:#dcdfeb;
+  --accent:#2f3fb8; --gold:#a8771c; --gold-soft:#f6ecd6; --star:#d39b1f;
+  --good:#23825a; --good-soft:#dff2e8; --warn:#a8771c; --bad:#bf3f3a; --bad-soft:#f8e1df;
+  --display:"Do Hyeon","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1120; --surface:#171a2d; --sunk:#12152a; --ink:#e8e9f5; --muted:#9ca1c2; --line:#2a2e48;
+  --accent:#9aa6ff; --gold:#e3b65c; --gold-soft:#3a2f17; --star:#f0c45a;
+  --good:#5cc894; --good-soft:#163527; --warn:#e3b65c; --bad:#f07a73; --bad-soft:#3e1e1e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1120; --surface:#171a2d; --sunk:#12152a; --ink:#e8e9f5; --muted:#9ca1c2; --line:#2a2e48;
+  --accent:#9aa6ff; --gold:#e3b65c; --gold-soft:#3a2f17; --star:#f0c45a;
+  --good:#5cc894; --good-soft:#163527; --warn:#e3b65c; --bad:#f07a73; --bad-soft:#3e1e1e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:2.1rem;line-height:1.15} h2{font-size:1.35rem}
+a{color:var(--accent)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.12em;color:var(--gold);font-weight:600}
+header{display:grid;gap:6px} header p{margin:0;max-width:65ch;color:var(--muted)}
+.src{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:.8rem;white-space:nowrap}
+.pill.ex{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
+.inputs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.inputs{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:12px;align-content:start;min-width:0}
+.panel h2 small{font-family:var(--body);font-size:.8rem;color:var(--muted);margin-left:6px}
+details.steps summary{cursor:pointer;font-size:.9rem;color:var(--accent)}
+ol.steps-list{margin:8px 0 0;padding-left:1.3em;display:grid;gap:4px;font-size:.88rem}
+code{font-family:var(--mono);font-size:.85em;background:var(--sunk);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+label.lbl{font-size:.82rem;color:var(--muted);display:grid;gap:4px}
+input[type=url]{width:100%;font:inherit;font-size:.82rem;font-family:var(--mono);padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--sunk);color:var(--ink)}
+textarea{width:100%;min-height:90px;resize:vertical;font-family:var(--mono);font-size:.8rem;background:var(--sunk);color:var(--ink);border:1px dashed var(--line);border-radius:10px;padding:10px}
+textarea:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.filebtn{font:inherit;font-size:.88rem;border-radius:9px;padding:7px 13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+button:hover,.filebtn:hover{border-color:var(--accent)}
+.filebtn{position:relative} .filebtn input{position:absolute;opacity:0;width:1px;height:1px}
+.status{font-size:.85rem;min-height:1.3em} .status.err{color:var(--bad)} .status.ok{color:var(--good)}
+.readonly{font-size:.8rem;color:var(--muted);background:var(--sunk);border-radius:8px;padding:8px 10px;margin:0}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:2px}
+.stat b{font-family:var(--mono);font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:.8rem;color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;border-radius:0;padding:7px 12px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;align-items:start}
+@media (max-width:420px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;align-content:start;min-width:0}
+.card.fav{border-color:var(--star)}
+.card-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 16px 10px;border-top:4px solid var(--stripe)}
+.who{display:flex;gap:6px;align-items:center;min-width:0}
+.who h3{font-size:1.3rem;overflow-wrap:anywhere}
+.eid{font-family:var(--mono);font-size:.85rem;color:var(--gold);white-space:nowrap}
+.starbtn{border:0;background:none;padding:2px 4px;font-size:1.25rem;line-height:1;color:var(--line);cursor:pointer}
+.starbtn[aria-pressed="true"]{color:var(--star)}
+.starbtn:hover{color:var(--star)}
+.pctbox{text-align:right;display:grid;justify-items:end}
+.pct{font-family:var(--mono);font-weight:700;font-size:1.8rem;line-height:1;color:var(--tier);font-variant-numeric:tabular-nums}
+.pct-l{font-size:.7rem;color:var(--muted)}
+.delta{font-family:var(--mono);font-size:.76rem} .delta.up{color:var(--good)} .delta.down{color:var(--bad)}
+.bar{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--tier);border-radius:99px}
+.card-top .bar{grid-column:1/-1}
+.checks{display:grid;gap:6px;padding:4px 16px 8px}
+.chk{display:grid;grid-template-columns:1.6em 4.8em minmax(0,1fr);gap:8px;align-items:center;font-size:.84rem}
+.ox{width:1.6em;height:1.6em;border-radius:6px;display:grid;place-items:center;font-family:var(--body);font-weight:700;font-size:.85rem}
+.ox.o{background:var(--good-soft);color:var(--good)} .ox.x{background:var(--bad-soft);color:var(--bad)}
+.chk .k{color:var(--muted);font-size:.8rem}
+.chk .v{min-width:0;overflow-wrap:anywhere}
+.chk .v small{display:block;color:var(--muted);font-size:.75rem}
+.items{list-style:none;margin:0;padding:2px 16px 12px;display:grid;border-top:1px dashed var(--line)}
+.items li{display:grid;grid-template-columns:5.6em minmax(0,1fr) 3em;gap:4px 10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.86rem}
+.items li:last-child{border-bottom:0}
+.items .k{color:var(--muted);font-size:.8rem}
+.items .v{min-width:0;display:grid;gap:4px}
+.items .p{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;font-weight:700;color:var(--itier)}
+.items .bar{height:4px} .items .bar i{background:var(--itier)}
+.rec{margin:0 12px 12px;padding:10px 12px;border-radius:10px;background:var(--sunk);display:grid;gap:8px}
+.rec h4{margin:0;font-size:.78rem;letter-spacing:.06em;color:var(--accent);font-weight:600}
+.rec ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rec li{display:grid;gap:2px;font-size:.84rem}
+.rec li b{font-weight:600}
+.rec li .gain{font-family:var(--mono);color:var(--good);font-size:.8rem;margin-left:4px}
+.rec li small{color:var(--muted);font-size:.77rem;overflow-wrap:anywhere}
+.note{margin:0 16px 14px;padding:8px 10px;border-radius:8px;background:var(--gold-soft);font-size:.8rem}
+.missing{display:flex;flex-wrap:wrap;gap:8px}
+details.panel>summary{cursor:pointer;font-family:var(--display);font-size:1.15rem}
+.rules{display:grid;gap:14px;font-size:.9rem} .rules p{margin:0;max-width:75ch}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:.85rem;min-width:560px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--sunk);font-weight:600;font-size:.8rem;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.empty{grid-column:1/-1;padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .5s ease}}
+
+.chk{grid-template-columns:1.6em 4.6em minmax(0,1fr);font-size:.82rem}
+.chk .srctag{font-size:.68rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;white-space:nowrap}
+.buildtag{font-size:.72rem;color:var(--accent);border:1px solid var(--line);border-radius:6px;padding:0 6px;white-space:nowrap}
+.score{margin:0 12px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center}
+.score b{font-family:var(--mono);font-size:1.5rem;line-height:1;color:var(--accent);grid-row:span 2}
+.score .chips{display:flex;flex-wrap:wrap;gap:4px}
+.score .chips span{font-size:.74rem;background:var(--sunk);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.score .chips span i{font-style:normal;font-family:var(--mono);font-weight:700;margin-left:3px}
+.score small{font-size:.74rem;color:var(--muted)}
+.links{display:grid;gap:8px;padding-top:4px;border-top:1px dashed var(--line)}
+.linkrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem}
+.sheetpaste{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
+@media (max-width:560px){.sheetpaste{grid-template-columns:minmax(0,1fr)}}
+.sheetpaste>div{display:grid;gap:4px;font-size:.8rem;color:var(--muted)}
+.mode-note{margin:0;font-size:.82rem;color:var(--muted);max-width:80ch}
+
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">붕괴: 스타레일 · 붕스 세팅정리 기준</div>
+    <h1>붕스 종결 진척도</h1>
+    <p>HoYoLAB 캐릭터 데이터를 붙여넣으면 붕스 세팅정리 시트의 '세팅'·'종결' 기준과 비교해, 세트와 부위별 주옵이 맞는지(O/X), 수치가 몇 % 채워졌는지, 유효 부옵이 몇 번 붙었는지, 어느 부위를 바꾸면 좋은지 보여줘요. 모든 계산은 이 브라우저 안에서만 해요.</p>
+    <div class="src" id="src"></div>
+  </header>
+
+  <div class="inputs">
+    <section class="panel" aria-labelledby="in-h">
+      <h2 id="in-h">내 데이터 넣기</h2>
+      <details class="steps">
+        <summary>HoYoLAB에서 복사하는 방법</summary>
+        <ol class="steps-list">
+          <li><a href="https://act.hoyolab.com/app/community-game-records-sea/rpg/index.html?bbs_presentation_style=fullscreen&gid=6#/hsr" target="_blank" rel="noopener">HoYoLAB 스타레일 전적 페이지</a>를 PC 크롬에서 열기</li>
+          <li><code>F12</code> → <b>Network</b> → 필터에 <code>info?</code> 입력 → <code>F5</code></li>
+          <li><code>info?server=…</code> 요청 오른쪽 클릭 → <b>Copy</b> → <b>Copy response</b></li>
+          <li>아래 칸에 붙여넣기 (<b>Copy as cURL</b>은 로그인 정보가 섞이니 쓰지 마세요)</li>
+        </ol>
+      </details>
+      <textarea id="paste" spellcheck="false" aria-label="HoYoLAB 응답 붙여넣기" placeholder="Copy response 한 내용을 여기에 붙여넣기 (Ctrl+V)"></textarea>
+      <div class="row">
+        <button class="primary" id="run" type="button">계산하기</button>
+        <label class="filebtn" for="file">파일로 넣기<input id="file" type="file" accept=".json,.txt,application/json,text/plain"></label>
+        <button id="reset" type="button">내 데이터 지우기</button>
+      </div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="sheet-h">
+      <h2 id="sheet-h">기준 시트 <small>읽기 전용</small></h2>
+      <label class="lbl" for="url-set">세팅 탭 주소
+        <input id="url-set" type="url" spellcheck="false" value="https://docs.google.com/spreadsheets/d/1kRQjQrHsgIDqPdnyDCVXG59Ge8AaKm0dyJvj6Vp2AY4/edit?gid=0#gid=0">
+      </label>
+      <label class="lbl" for="url-jong">종결 탭 주소
+        <input id="url-jong" type="url" spellcheck="false" value="https://docs.google.com/spreadsheets/d/1kRQjQrHsgIDqPdnyDCVXG59Ge8AaKm0dyJvj6Vp2AY4/edit?gid=1550788507#gid=1550788507">
+      </label>
+      <div class="row">
+        <button class="primary" id="sheet-load" type="button">시트 불러오기</button>
+        <button id="sheet-builtin" type="button">내장 기준으로 되돌리기</button>
+      </div>
+      <details class="steps" id="sheet-paste-box">
+        <summary>불러오기가 안 되면: 시트에서 복사해 붙여넣기</summary>
+        <ol class="steps-list">
+          <li>위 주소로 탭을 열고 아무 칸이나 클릭 → <code>Ctrl+A</code> → <code>Ctrl+C</code> (보기 전용이라 시트는 바뀌지 않아요)</li>
+          <li>맞는 칸에 <code>Ctrl+V</code>. 메모장에 저장해 둔 파일은 "파일로 넣기"로</li>
+        </ol>
+        <div class="sheetpaste">
+          <div><label for="paste-set">세팅 탭</label>
+            <textarea id="paste-set" spellcheck="false" placeholder="세팅 탭 전체 붙여넣기"></textarea>
+            <span class="filebtn" style="justify-self:start"><label for="file-set">파일로 넣기</label><input id="file-set" type="file" accept=".txt,.tsv,.csv,text/plain"></span>
+          </div>
+          <div><label for="paste-jong">종결 탭</label>
+            <textarea id="paste-jong" spellcheck="false" placeholder="종결 탭 전체 붙여넣기"></textarea>
+            <span class="filebtn" style="justify-self:start"><label for="file-jong">파일로 넣기</label><input id="file-jong" type="file" accept=".txt,.tsv,.csv,text/plain"></span>
+          </div>
+        </div>
+      </details>
+      <div class="status" id="sheet-status" role="status" aria-live="polite"></div>
+      <div class="links">
+        <div class="linkrow"><span class="muted">참고 글</span><a href="https://arca.live/b/hkstarrail/176040644?p=1" target="_blank" rel="noopener">아카라이브 스타레일 채널 · 붕스 세팅정리 글</a></div>
+        <label class="lbl" for="url-good">'이정도면 잘 키웠다' 시트 주소 (글의 이미지를 누르면 열리는 시트)
+          <input id="url-good" type="url" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/…">
+        </label>
+        <div class="linkrow" id="good-link"></div>
+      </div>
+      <p class="readonly">이 페이지는 시트를 <b>읽기만</b> 해요. 로그인 없이 공개된 내용을 받아오거나 복사한 내용을 붙여넣는 방식이라, 시트를 수정하는 요청은 아예 보낼 수 없어요.</p>
+    </section>
+  </div>
+
+  <section class="summary" id="summary" aria-label="요약"></section>
+
+  <section style="display:grid;gap:12px" aria-labelledby="list-h">
+    <div class="toolbar">
+      <h2 id="list-h">캐릭터별 진척도</h2>
+      <div class="row">
+        <div class="seg" role="group" aria-label="기준">
+          <button type="button" data-m="jong" aria-pressed="true" id="m-jong">종결 기준</button>
+          <button type="button" data-m="set" aria-pressed="false" id="m-set">세팅 기준</button>
+        </div>
+        <div class="seg" role="group" aria-label="보기">
+          <button type="button" data-f="all" aria-pressed="true" id="f-all">전체</button>
+          <button type="button" data-f="todo" aria-pressed="false" id="f-todo">미완성</button>
+          <button type="button" data-f="done" aria-pressed="false" id="f-done">달성</button>
+        </div>
+        <select id="sort" aria-label="정렬">
+          <option value="name">가나다 순</option>
+          <option value="low">수치 달성률 낮은 순</option>
+          <option value="high">수치 달성률 높은 순</option>
+          <option value="hits">유효 부옵 명중 높은 순</option>
+        </select>
+      </div>
+    </div>
+    <p class="mode-note" id="mode-note"></p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="panel" id="miss-sec" aria-labelledby="miss-h">
+    <h2 id="miss-h">계산에서 빠진 캐릭터</h2>
+    <p class="muted" style="margin:0;font-size:.88rem">기준 시트에 있지만 계정에 없거나 유물을 끼지 않은 캐릭터예요.</p>
+    <div class="missing" id="missing"></div>
+  </section>
+
+  <details class="panel" id="rules">
+    <summary>계산 규칙과 판단 근거</summary>
+    <div class="rules">
+      <p><b>기준</b> · "종결 기준"은 종결 탭의 세트·수치를, "세팅 기준"은 세팅 탭의 세트·수치를 써요. 부위별 주옵(몸통·신발·구체·매듭)과 행적은 종결 탭에 없어서 두 기준 모두 세팅 탭으로 판정해요. 세팅 탭에 빌드가 여러 개인 캐릭터는 지금 착용 상태와 가장 잘 맞는 빌드를 골라요.</p>
+      <p><b>O/X</b> · 4세트는 적힌 세트 중 하나를 4개 끼면 O. "속도 2+2"처럼 적힌 건 그 효과를 주는 2세트 두 개면 O, "제자 + 명장"은 두 세트를 2개씩 끼면 O. 장신구·부위 주옵은 적힌 것 중 하나면 O. 행적은 일반 공격·전투 스킬·필살기·특성 레벨이 적힌 값 이상이면 O(성혼 보너스 포함 레벨).</p>
+      <p><b>수치 달성률</b> · 목표마다 현재값 ÷ 목표값(최대 100%)의 평균이에요. "미만" 조건은 넘으면 넘은 만큼 깎여요. 값은 HoYoLAB 캐릭터 화면 기준이에요. <b>달성</b>은 O/X가 모두 O이고 수치가 100%일 때예요.</p>
+      <p><b>유효 부옵 명중</b> · HoYoLAB '유물 속성' 화면의 "명중 총합"과 같은 계산이에요. 유효 부옵마다 처음 붙은 것까지 포함한 강화 횟수를 6부위 모두 더해요. 유효 부옵 목록은 HoYoLAB 추천(직접 설정했다면 그 설정)을 쓰고, 세팅 탭의 유효 부가옵션 기준 값도 함께 보여줘요(시트의 "공격력"·"HP"·"방어력"은 % 옵션으로 셈).</p>
+      <p><b>주옵 추천</b> · 머리(HP)·손(공격력)은 주옵이 고정이라 빼고 몸통·신발·구체·매듭만 봐요. 지금 주옵이 세팅 탭에 없는 옵션이면 세팅 탭 옵션 중 가장 좋은 걸 권하고, 세팅 탭 옵션끼리라도 수치가 0.5%p 이상 오르면 권해요. 종결 기준에서는 종결 수치가 오르는 교체만 보여줘요. 새 유물은 +15로 계산하고, 새 유물에는 주옵과 같은 옵션이 부옵으로 붙을 수 없어서 지금 그 부위에 붙은 같은 부옵은 빼고 계산해요. +15가 안 된 유물이 있으면 강화부터 권해요.</p>
+      <h3 style="font-size:1.05rem">한 칸에 세트가 여러 개 적힌 캐릭터</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>캐릭터</th><th>시트 표기</th><th>O로 보는 조합</th><th>근거</th></tr></thead>
+        <tbody id="pairs"></tbody>
+      </table></div>
+      <h3 style="font-size:1.05rem">세트 이름 대응</h3>
+      <p class="muted">HoYoLAB 데이터에는 세트 이름 대신 유물 ID만 있어서, ID → 정식 이름 → 시트 줄임말로 연결해요. 계정에서 실제로 끼고 있는 세트로 확인했고, 아직 아무도 끼지 않은 세트는 ID를 순서로 추정하고 유물 이름으로도 맞춰요. "낙원"은 꿈을 엮는 요정의 낙원, "나나 낙원"은 기묘한 나나 낙원, "도시"는 천 개의 별이 모인 도시예요.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>시트 줄임말</th><th>정식 이름</th><th>2세트</th><th>4세트</th></tr></thead>
+        <tbody id="sets"></tbody>
+      </table></div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ===== 세트 사전: HoYoLAB 세트 ID → 정식명 / 시트 줄임말 / 효과 =====
+// ID는 유물 ID의 (id/10)%1000. 131·133·134, 305·307·311~313·326~330은 데이터에 없어 순서로 추정(이름 매칭으로 보완).
+const SETS = {
+101:['흔적을 남기지 않은 과객',['과객'],'치유량 +10%','전투 시작 시 전투 스킬 포인트 1 회복'],
+102:['들이삭과 동행하는 거너',['거너'],'공격력 +12%','속도 +6%, 일반 공격 피해 +10%'],
+103:['정토 교황의 팔라딘',['팔라딘'],'방어력 +15%','보호막 흡수량 +20%'],
+104:['혹한 밀림의 사냥꾼',['사냥꾼'],'얼음 피해 +10%','필살기 후 치명타 피해 +25% (2턴)'],
+105:['스트리트 격투왕',['격투왕'],'물리 피해 +10%','공격·피격 시 공격력 +5% (최대 5중첩)'],
+106:['눈보라에 맞서는 철위대',['철위대'],'받는 피해 -8%','HP 50% 이하로 턴 시작 시 HP 8%·에너지 5 회복'],
+107:['용암 단조의 화장',['화장'],'화염 피해 +10%','전투 스킬 피해 +12%, 필살기 후 다음 공격 화염 피해 +12%'],
+108:['별처럼 빛나는 천재',['천재'],'양자 피해 +10%','방어력 10% 무시, 양자 약점 적은 10% 추가 무시'],
+109:['뇌전을 울리는 밴드',['밴드','뇌전'],'번개 피해 +10%','전투 스킬 후 공격력 +20% (1턴)'],
+110:['밤낮의 경계를 나는 매',['매'],'바람 피해 +10%','필살기 후 행동 25% 앞당김'],
+111:['유성을 쫓는 괴도',['괴도'],'격파 특수효과 +16%','격파 특수효과 +16%, 약점 격파 시 에너지 3 회복'],
+112:['황무지의 도적, 황야인',['황야인','도적'],'허수 피해 +10%','디버프 적에게 치명타 확률 +10%, 속박 적에게 치명타 피해 +20%'],
+113:['장수를 원하는 제자',['제자'],'HP +12%','피격·HP 소모 시 치명타 확률 +8% (2턴, 2중첩)'],
+114:['가상공간을 누비는 메신저',['메신저'],'속도 +6%','아군 대상 필살기 시 아군 전체 속도 +12% (1턴)'],
+115:['재와 뼈마저 불사르는 대공',['대공'],'추가 공격 피해 +20%','추가 공격 타격마다 공격력 +6% (최대 8중첩)'],
+116:['깊은 감옥에 수감된 죄수',['죄수'],'공격력 +12%','적의 지속 피해 상태 1개당 방어력 6% 무시 (최대 3)'],
+117:['사수에 잠수한 선구자',['선구자'],'디버프 적에게 주는 피해 +12%','치명타 확률 +4%, 디버프 2/3개 이상 적에게 치명타 피해 +8/12%'],
+118:['꿈을 조작하는 시계공',['시계공'],'격파 특수효과 +16%','아군 대상 필살기 시 아군 전체 격파 특수효과 +30% (2턴)'],
+119:['곤충 재앙을 잠재우는 철기군',['철기군'],'격파 특수효과 +16%','격특 150%↑ 격파 피해 방어 10% 무시, 250%↑ 초격파 피해 15% 추가 무시'],
+120:['바람과 구름을 가르는 용맹함',['용맹함','용맹'],'공격력 +12%','치명타 확률 +6%, 추가 공격 후 필살기 피해 +36% (1턴)'],
+121:['고행의 길에 다시 오른 사제',['사제'],'속도 +6%','아군 단일 대상 스킬·필살기 시 대상 치명타 피해 +18% (2턴, 2중첩)'],
+122:['지식의 바다에 빠진 학자',['학자'],'치명타 확률 +8%','전투 스킬·필살기 피해 +20%, 필살기 후 다음 전투 스킬 피해 +25%'],
+123:['개선가를 울리는 영웅',['영웅'],'공격력 +12%','기억 정령 필드 시 속도 +6%, 기억 정령 공격 시 치명타 피해 +30%'],
+124:['망국을 애도하는 시인',['시인'],'양자 피해 +10%','속도 -8%, 속도 110/95 미만이면 치명타 확률 +20/32%'],
+125:['태양과 번개의 여전사',['여전사'],'속도 +6%','다른 아군 치유 시 속도 +6%, 아군 전체 치명타 피해 +15%'],
+126:['거친 파도를 헤치는 선장',['선장'],'치명타 피해 +16%','도움 2중첩으로 필살기 시 공격력 +48% (1턴)'],
+127:['천지를 재창조한 구세주',['구세주'],'치명타 확률 +8%','기억 정령이 있을 때 일반 공격·스킬 후 HP +24%, 아군 피해 +15%'],
+128:['별빛에 숨은 은둔자',['은둔자'],'보호막 효과 +10%','보호막 +12%, 보호막 보유 아군 치명타 피해 +15%'],
+129:['빛나는 공훈의 마법 소녀',['마법소녀'],'치명타 피해 +16%','환락 피해 방어력 무시 10% + 펀치라인 5마다 1% (최대 10)'],
+130:['천명에 응해 먼 길을 떠난 점술가',['점술가'],'속도 +6%','속도 120/160 이상이면 치명타 확률 +10/18%'],
+131:['별을 갈망하는 항법사 아집',['아집'],'공격력 +12%','전투 스킬·필살기 피해 +18% 중첩 (최대 3)'],
+132:['신공을 탐구하는 명장',['명장'],'HP +12%','방어력 감소 적에게 치명타 피해 +28%, 아군 피해 +15% 버프'],
+133:['꿈같은 유희 속 별을 밝히는 연극인',['연극인'],'속도 +6%','아군 대상 스킬·필살기 시 환락도 +16%'],
+134:['금단의 열매를 삼킨 이단',['이단'],'치명타 피해 +16%','일반 공격 피해 +36%, 일반 공격 후 공격력 +20% (2턴)'],
+301:['우주 봉인 정거장',['정거장'],'공격력 +12%, 속도 120 이상이면 공격력 +12% 추가'],
+302:['불로인의 선주',['선주'],'HP +12%, 속도 120 이상이면 아군 공격력 +8%'],
+303:['범은하 상사',['상사'],'효과 명중 +10%, 효과 명중의 25%만큼 공격력 증가'],
+304:['축성가의 벨로보그',['벨로보그'],'방어력 +15%, 효과 명중 50% 이상이면 방어력 +15%'],
+305:['천체 차분기관',['차분기관'],'치명타 피해 +16%, 치피 120% 이상이면 첫 공격 치명타 확률 +60%'],
+306:['회전을 멈춘 살소토',['살소토'],'치명타 확률 +8%, 치확 50% 이상이면 필살기·추가 공격 피해 +15%'],
+307:['도적국 탈리아',['탈리아'],'격파 특수효과 +16%, 속도 145 이상이면 격특 +20%'],
+308:['생명의 바커 공',['바커공'],'에너지 회복효율 +5%, 속도 120 이상이면 전투 진입 시 행동 40% 앞당김'],
+309:['뭇별 경기장',['뭇별'],'치명타 확률 +8%, 치확 70% 이상이면 일반 공격·스킬 피해 +20%'],
+310:['부러진 용골',['용골'],'효과 저항 +10%, 효저 30% 이상이면 아군 치명타 피해 +10%'],
+311:['창공 전선 그라모스',['그라모스'],'공격력 +12%, 속도 135/160 이상이면 피해 +12/18%'],
+312:['꿈의 땅 페나코니',['페나코니'],'에너지 회복효율 +5%, 같은 속성 아군 피해 +10%'],
+313:['주인 없는 황폐한 별 츠가냐',['츠가냐'],'치명타 확률 +4%, 적 처치마다 치명타 피해 +4% (최대 10)'],
+314:['이즈모 현세와 타카마 신국',['이즈모'],'공격력 +12%, 같은 운명의 길 아군이 있으면 치명타 확률 +12%'],
+315:['질주하는 늑대의 도람 왕조',['도람'],'추가 공격마다 추가 공격 피해 +5% (5중첩 시 치명타 피해 +25%)'],
+316:['겁화 연등의 연마궁',['연마궁'],'속도 +6%, 화염 약점 적 공격 시 격파 특수효과 +40%'],
+317:['바다에 잠긴 루샤카',['루샤카'],'에너지 회복효율 +5%, 첫 번째 자리 캐릭터 공격력 +12%'],
+318:['기묘한 나나 낙원',['나나낙원'],'치명타 피해 +16%, 소환물이 있으면 치명타 피해 +32%'],
+319:['고요한 습골지',['습골지'],'HP +12%, HP 5000 이상이면 치명타 피해 +28%'],
+320:['사색하는 거목',['고목','거목'],'속도 +6%, 속도 135/180 이상이면 치유량 +12/20%'],
+321:['꿈을 엮는 요정의 낙원',['낙원','요정의낙원'],'필드 아군이 4명보다 적을수록 피해 증가'],
+322:['즐거움에 취한 바다의 일각',['일각'],'공격력 +12%, 공격력 2400/3600 이상이면 지속 피해 +12/24%'],
+323:['영원의 땅 앰포리어스',['앰포리어스'],'치명타 확률 +8%, 기억 정령이 있으면 아군 속도 +8%'],
+324:['텐고쿠@라이브스트리밍',['텐고쿠'],'치명타 피해 +16%, 한 턴에 스킬 포인트 3 이상 소모 시 치명타 피해 +32%'],
+325:['0호 스테이지 펑크 로드',['펑크로드'],'환락도 +8%, 환락도 40/80% 도달 시 치명타 피해 +20/32%'],
+326:['천 개의 별이 모인 도시',['별이모인도시','도시'],'추가 공격 후 공격력 +24%, 적 처치 시 아군 치명타 피해 +12%'],
+327:['추락한 별의 출항지',['출항지'],'치명타 확률 +8%, 다른 개척 동료가 있으면 치명타 피해 +32%'],
+328:['우주 생명과학연구원',['생명과학연구원'],'에너지 최대치 200 초과분 1당 피해 +0.2% (최대 32%)'],
+329:['신의 순간의 환락',['신의순간','환락'],''],
+330:['아공간 이상 사물 수용소',['수용소','사물수용소'],''],
+};
+const norm = s => String(s||'').replace(/[\s ]+/g,'');
+const NICK = {}; for (const [id,v] of Object.entries(SETS)) for (const n of v[1]) NICK[norm(n)] = +id;
+
+// ===== 종결 탭 내장본 (2026-11-03 시트 기준, 캐릭명 정렬 보정) =====
+const JONG = [
+{n:'제레',cav:['천재'],orn:['뭇별'],t:[['atk',4000],['spd',122]],cr:80,cd:240},
+{n:'제이드',cav:['천재'],orn:['도람'],t:[['atk',3500]],cr:82,cd:160},
+{n:'카스토리스',cav:['시인'],orn:['습골지'],t:[['hp',8000],['spd',95,'max']],cr:68,cd:240,note:'속도 95 미만'},
+{n:'사이퍼',cav:['천재'],orn:['*'],t:[['spd',200]],cr:50,cd:200},
+{n:'아처',cav:['아집','천재'],pair:true,orn:['텐고쿠'],t:[['atk',3000]],cr:100,cd:200},
+{n:'토오사카 린',cav:['학자'],orn:['텐고쿠'],t:[['atk',3200]],cr:100,cd:180},
+{n:'어벤츄린•웨이브',cav:['마법소녀'],orn:['펑크로드'],t:[['spd',180]],cr:100,cd:160},
+{n:'경원',cav:['대공'],orn:['나나낙원'],t:[['atk',3000],['spd',134]],cr:80,cd:200},
+{n:'카프카',cav:['매'],orn:['루샤카'],t:[['ehr',75],['spd',167]]},
+{n:'아케론',cav:['선구자'],orn:['이즈모'],t:[['atk',4000]],crit:[[0,80,240],[2,66,280]],orb:33,note:'공격력 구체 · 2돌부터 치확/치피 66 / 280'},
+{n:'아글라이아',cav:['영웅'],orn:['나나낙원'],t:[['spd',161]],cr:100,cd:140},
+{n:'애쉬베일',cav:['대공'],orn:['도람'],t:[['atk',3600],['spd',134]],cr:100,cd:160},
+{n:'길가메시',cav:['학자'],orn:['생명과학연구원'],t:[['atk',4000]],cr:100,cd:140,orb:18,note:'번개 구체'},
+{n:'경류',cav:['학자'],orn:['습골지'],t:[['hp',8000],['spd',134]],cr:50,cd:200},
+{n:'더 헤르타',cav:['학자'],orn:['이즈모'],t:[['atk',3000]],cr:88,cd:200},
+{n:'에버나이트',cav:['구세주'],orn:['습골지'],t:[['hp',8000]],cr:65,cd:240,orb:16,note:'얼음 구체'},
+{n:'키레네',cav:['구세주'],orn:['앰포리어스'],t:[['hp',5500],['spd',200]],cr:50,cd:220},
+{n:'아젠티',cav:['학자'],orn:['살소토'],t:[['atk',3000],['spd',134]],cr:75,cd:200},
+{n:'부트힐',cav:['철기군'],orn:['연마궁'],t:[['spd',180],['be',280]]},
+{n:'운리',cav:['용맹함'],orn:['도람'],t:[['atk',3500]],cr:100,cd:220},
+{n:'히실렌스',cav:['죄수'],orn:['일각'],variants:[[['atk',4300],['spd',129]],[['atk',3800],['spd',168]]],t:[['ehr',120]],note:'공 4300·속도 129 또는 공 3800·속도 168 중 가까운 쪽'},
+{n:'파이논',cav:['아집'],orn:['뭇별','낙원'],t:[['atk',3000]],cr:100,cd:200,note:'키레네 치확 16%'},
+{n:'에바네시아',cav:['마법소녀'],orn:['펑크로드'],t:[['spd',134]],cr:70,cd:300},
+{n:'히메코',cav:['대공'],orn:['츠가냐'],t:[['atk',3300]],cr:85,cd:130},
+{n:'토파즈',cav:['대공'],orn:['나나낙원'],t:[['atk',2800]],cr:100,cd:200},
+{n:'반디',cav:['철기군'],orn:['연마궁'],t:[['atk',2500],['spd',190],['be',300]]},
+{n:'망귀인',cav:['철기군'],orn:['연마궁'],t:[['spd',187],['be',250],['ehr',66]]},
+{n:'달리아',cav:['철기군'],orn:['연마궁'],t:[['spd',170],['be',220]]},
+{n:'스파키',cav:['마법소녀'],orn:['텐고쿠'],t:[['atk',3000],['spd',148]],cr:100,cd:200},
+{n:'천야•블레이드',cav:['명장','매'],pair:false,orn:['바커공','습골지'],t:[['spd',141],['hp',7000]],cr:80,cd:160},
+{n:'히메코•노바',cav:['아집'],orn:['출항지'],t:[['atk',4400]],cr:100,cd:160,orb:33,note:'선데이 치확 20 · 공격력 구체'},
+{n:'블레이드',cav:['제자'],orn:['습골지'],t:[['hp',8000],['spd',134]],cr:80,cd:160},
+{n:'블랙스완',cav:['죄수'],orn:['일각'],t:[['atk',4400],['ehr',120],['spd',134]]},
+{n:'비소',cav:['매'],orn:['도람'],t:[['atk',2200],['spd',151]],cr:100,cd:120},
+{n:'아낙사',cav:['천재'],orn:['뭇별'],t:[['atk',3800]],cr:100,cd:180},
+{n:'히아킨',cav:['여전사'],orn:['고목'],t:[['hp',6000],['spd',240]],cd:120},
+{n:'세이버',cav:['학자'],orn:['생명과학연구원'],t:[['atk',2400]],cr:80,cd:220},
+{n:'음월',cav:['이단','거너'],pair:true,orn:['뭇별'],t:[['atk',3200]],cr:100,cd:220},
+{n:'레이시오',cav:['선구자'],orn:['도람'],t:[['atk',3000],['spd',134]],cr:87.5,cd:150},
+{n:'어벤츄린',cav:['선구자'],orn:['루샤카','도람'],t:[['def',4000],['spd',134]],cr:52,cd:150},
+{n:'라파',cav:['철기군'],orn:['연마궁'],t:[['atk',3400],['spd',170],['be',280]]},
+{n:'마이데이',cav:['학자'],orn:['습골지'],t:[['hp',8000]],cr:52,cd:280},
+{n:'은랑 LV.999',cav:['마법소녀'],orn:['펑크로드'],t:[['spd',210]],cr:82,cd:170},
+];
+// ===== 설정: 시트로 판단할 수 없는 부분 =====
+const ALIAS = {'음월':'단항•음월','레이시오':'Dr.레이시오','토파즈':'토파즈&복순이'};
+const PAIR_OK = {'아처':true,'음월':true,'천야•블레이드':false}; // 2+2 허용 판단(세트 효과 기준)
+const STATK = {hp:[1,'HP',''],atk:[2,'공격력',''],def:[3,'방어력',''],spd:[4,'속도',''],cr:[5,'치명타 확률','%'],cd:[6,'치명타 피해','%'],ehr:[10,'효과 명중','%'],be:[58,'격파 특수효과','%']};
+const PROP = {27:['HP','hp',0],32:['HP%','hp',1],29:['공격력','atk',0],33:['공격력%','atk',1],31:['방어력','def',0],34:['방어력%','def',1],51:['속도','spd',0],52:['치명타 확률','cr',0],53:['치명타 피해','cd',0],56:['효과 명중','ehr',0],57:['효과 저항',null,0],58:['격파 특수효과','be',0],59:['격파 특수효과','be',0],54:['에너지 회복효율',null,0],55:['치유량',null,0],
+  12:['물리 피해',null,0],14:['화염 피해',null,0],16:['얼음 피해',null,0],18:['번개 피해',null,0],20:['바람 피해',null,0],22:['양자 피해',null,0],24:['허수 피해',null,0]};
+const MAIN_PCT_NAME = {32:'HP',33:'공격력',34:'방어력'};
+const mainName = t => MAIN_PCT_NAME[t] || (PROP[t]?PROP[t][0]:'기타');
+const MAINV = {32:43.2,33:43.2,34:54,52:32.4,53:64.8,56:43.2,51:25.032,59:64.8,58:64.8};
+const SLOT = {3:['몸통',[52,53,33,32,34,56]],4:['신발',[51,33,32,34]],5:['구체',[33,32,34]],6:['매듭',[33,32,34,59]]};
+const ELEM_T = [12,14,16,18,20,22,24];
+const ORB_WORD = {'공격력':33,'HP':32,'방어력':34,'물리':12,'화염':14,'얼음':16,'번개':18,'바람':20,'양자':22,'허수':24};
+
+// ===== HoYoLAB 응답 → 요약 =====
+function compact(raw){
+  const list = raw && raw.data && raw.data.avatar_list;
+  if (!Array.isArray(list)) throw new Error('avatar_list 없음');
+  const RP=(raw.data.recommend_property)||{};
+  const num = v => parseFloat(String(v).replace('%',''));
+  return list.map(a=>{
+    const st={}, base={};
+    for (const p of a.properties||[]){ st[p.property_type]=num(p.final); base[p.property_type]=num(p.base); }
+    const piece = r => ({id:r.id,pos:r.pos,nm:String(r.name||'').replace(/\u00a0/g,' '),lv:r.level,
+      m:[r.main_property.property_type,num(r.main_property.value)],
+      s:(r.properties||[]).filter(x=>!x.is_preview).map(x=>[x.property_type,num(x.value),x.times||0])});
+    const rp=RP[a.id]||RP[String(a.id)];
+    const tr=['Point01','Point02','Point03','Point04'].map(an=>{const k=(a.skills||[]).find(x=>x.point_type===2&&x.anchor===an);return k?k.level:null});
+    return {v:3,n:String(a.name).replace(/\u00a0/g,' '),id:a.id,r:a.rank,pt:a.base_type,st,base,tr,
+      rec: rp ? {custom:!!rp.is_custom_property_valid, list:(rp.is_custom_property_valid?rp.custom_relic_properties:rp.recommend_relic_properties)||[]} : null,
+      rel:(a.relics||[]).map(piece),orn:(a.ornaments||[]).map(piece)};
+  });
+}
+function setOf(p){
+  const sid=Math.floor(p.id/10)%1000; if (SETS[sid]) return sid;
+  const nm=norm(p.nm); for (const [k,id] of Object.entries(NICK)) if (nm.startsWith(k)) return id;
+  return sid;
+}
+const setName = id => SETS[id] ? SETS[id][1][0] : '알 수 없는 세트';
+function counts(ps){const c={};for(const p of ps){const s=setOf(p);c[s]=(c[s]||0)+1}return c}
+const fmt=(v,u)=>(Math.round(v*10)/10).toLocaleString('ko-KR')+u;
+
+// ===== 목표 해석 =====
+function resolveTargets(row, rank, S){
+  const ratio=(k,val,mode)=>{const cur=S[k]; if(cur==null||isNaN(cur))return 0; if(mode==='max')return cur<val?100:Math.max(0,100*(1-(cur-val+0.1)/val)); return Math.min(100,100*cur/val)};
+  let t=row.t.slice();
+  if (row.variants&&row.variants.length){
+    let best=null; for(const v of row.variants){const a=v.reduce((x,[k,val,m])=>x+ratio(k,val,m),0)/v.length; if(!best||a>best.a)best={v,a}}
+    t=best.v.concat(t);
+  }
+  let cr=row.cr, cd=row.cd;
+  if (row.crit) for (const [minR,a,b] of row.crit) if (rank>=minR){cr=a;cd=b}
+  if (cr!=null) t.push(['cr',cr]); if (cd!=null) t.push(['cd',cd]);
+  return t.map(([k,val,mode])=>({k,val,mode:mode||'min',p:ratio(k,val,mode)}));
+}
+const avgP = ts => ts.length ? ts.reduce((a,b)=>a+b.p,0)/ts.length : 0;
+function statsOf(ch){const S={};for(const k in STATK)S[k]=ch.st[STATK[k][0]];return S}
+function contrib(type,val,base){
+  const P=PROP[type]; if(!P||!P[1])return null; const k=P[1];
+  if(P[2]){const bt=STATK[k][0]; return [k,(base[bt]||0)*val/100]}
+  return [k,val];
+}
+
+// ===== 주옵 교체 추천 =====
+// 머리(HP)·손(공격력)은 주옵 고정이라 제외. 몸통·신발·구체·매듭만 바꿀 수 있음.
+// 새 유물에는 주옵과 같은 옵션이 부옵으로 붙을 수 없으므로, 지금 부위의 해당 부옵은 빼고 계산.
+const MAX15 = Object.assign({27:705.6,29:352.8,54:19.44,55:34.56}, MAINV);
+const mainMax = t => ELEM_T.includes(t) ? 38.88 : MAX15[t];
+const KEEP = {4:[51],3:[55],6:[54]}; // 속도 신발·치유량 몸통·에너지 매듭은 종결 탭에 없어도 유지
+function leveled(ch){
+  const S={...statsOf(ch)}; const low=[];
+  for (const p of ch.rel.concat(ch.orn)){
+    if (p.lv>=15) continue;
+    const mx=mainMax(p.m[0]); low.push(p);
+    if (mx==null) continue;
+    const c=contrib(p.m[0],mx-p.m[1],ch.base); if(c&&S[c[0]]!=null) S[c[0]]+=c[1];
+  }
+  return {S,low};
+}
+const POS_NAME={1:'머리',2:'손',3:'몸통',4:'신발',5:'구체',6:'매듭'};
+function diffs(tkeys,A,B){const out=[];for(const k of tkeys){const a=A[k],b=B[k];if(a!=null&&b!=null&&Math.abs(b-a)>=0.05)out.push([STATK[k][1],fmt(a,STATK[k][2]),fmt(b,STATK[k][2])])}return out}
+function recommend(row, ch){
+  const S0=statsOf(ch), base=ch.base, rank=ch.r;
+  const tkeys=[...new Set(resolveTargets(row,rank,S0).map(x=>x.k))];
+  const out=[];
+  const L=leveled(ch);
+  const sL=avgP(resolveTargets(row,rank,L.S)), s0=avgP(resolveTargets(row,rank,S0));
+  if (L.low.length){
+    out.push({kind:'level',slot:L.low.map(p=>POS_NAME[p.pos]+' +'+p.lv).join(', '),d:sL-s0,changes:diffs(tkeys,S0,L.S)});
+  }
+  const pieces={}; for(const p of ch.rel.concat(ch.orn)) pieces[p.pos]=p;
+  for (const pos of [3,4,5,6]){
+    const p=pieces[pos], cur=p?p.m[0]:null;
+    let cands=SLOT[pos][1];
+    const forced = pos===5 && row.orb!=null && cur!==row.orb;
+    if (pos===5){
+      if (row.orb!=null){ if(cur===row.orb) continue; cands=[row.orb]; }
+      else if (ELEM_T.includes(cur)) continue;
+    }
+    if (!forced && cur!=null && (KEEP[pos]||[]).includes(cur)) continue;
+    if (pos===6 && cur===54 && tkeys.includes('be')) {/* 격특 목표가 있으면 에너지 매듭도 검토 */}
+    let best=null;
+    for (const m of cands){
+      if (m===cur || ((m===59||m===58)&&(cur===58||cur===59))) continue;
+      const S={...L.S};
+      if (p){ const c=contrib(p.m[0],mainMax(p.m[0])??p.m[1],base); if(c&&S[c[0]]!=null) S[c[0]]-=c[1]; }
+      const add=contrib(m, mainMax(m), base);
+      let lostSub=0;
+      if (add){
+        if (p) for (const [st,v] of p.s){ const c=contrib(st,v,base); if(c&&c[0]===add[0]){ S[c[0]]-=c[1]; lostSub+=c[1]; } }
+        S[add[0]]=(S[add[0]]||0)+add[1];
+      }
+      if (!add && !forced) continue;
+      const d=avgP(resolveTargets(row,rank,S))-sL;
+      if (!best||d>best.d) best={kind:'swap',pos,slot:SLOT[pos][0],from:cur==null?'없음':mainName(cur),to:mainName(m),d,S,lostSub,lostName:add?STATK[add[0]][1]:'',forced};
+    }
+    if (best && (best.d>=0.5 || best.forced)){ best.changes=diffs(tkeys,L.S,best.S); delete best.S; out.push(best); }
+  }
+  const lv=out.filter(x=>x.kind==='level'), sw=out.filter(x=>x.kind==='swap').sort((a,b)=>(b.forced-a.forced)||(b.d-a.d));
+  return lv.concat(sw.slice(0,3));
+}
+
+// ===== 캐릭터 평가 =====
+function evalChar(row, ch){
+  const checks=[];
+  const cc=counts(ch.rel), ids=row.cav.map(n=>NICK[norm(n)]);
+  const worn=Object.entries(cc).filter(([,v])=>v>=2).map(([k,v])=>setName(+k)+' '+v).join(' + ')||'세트 효과 없음';
+  const pairOk = PAIR_OK[row.n]!=null ? PAIR_OK[row.n] : !!row.pair;
+  const four=ids.some(id=>cc[id]>=4), twos=ids.filter(id=>cc[id]>=2&&cc[id]<4).length;
+  const cavOk = four || (pairOk && twos>=2);
+  checks.push({k:'4세트',ok:cavOk,cur:worn,tgt:row.cav.join(' / ')+(pairOk&&row.cav.length>1?' (2+2 가능)':''),
+    why: cavOk?'':(twos?'목표 세트 2개만 착용':(row.cav.length?'목표 세트 아님':''))});
+  const oc=counts(ch.orn), owear=Object.entries(oc).filter(([,v])=>v>=2).map(([k])=>setName(+k));
+  const any=row.orn[0]==='*';
+  const ornOk = any ? owear.length>0 : row.orn.some(n=>oc[NICK[norm(n)]]>=2);
+  checks.push({k:'장신구',ok:ornOk,cur:owear.join(', ')||'세트 효과 없음',tgt:any?'아무거나':row.orn.join(' / ')});
+  if (row.orb!=null){
+    const orbP=ch.orn.find(p=>p.pos===5), cur=orbP?orbP.m[0]:null;
+    checks.push({k:'구체 주옵',ok:cur===row.orb,cur:cur==null?'없음':mainName(cur),tgt:mainName(row.orb)});
+  }
+  const S=statsOf(ch), ts=resolveTargets(row,ch.r,S);
+  const items=ts.map(x=>({k:STATK[x.k][1],cur:S[x.k]==null?'-':fmt(S[x.k],STATK[x.k][2]),tgt:x.mode==='max'?x.val+STATK[x.k][2]+' 미만':fmt(x.val,STATK[x.k][2]),p:x.p}));
+  const total=avgP(ts);
+  const allOk=checks.every(c=>c.ok);
+  return {name:row.n,rank:ch.r,total,items,checks,allOk,complete:allOk&&total>=99.95,note:row.note||'',rec:recommend(row,ch)};
+}
+function analyze(chars, jong){
+  const byName={}; for(const c of chars) byName[norm(c.n)]=c;
+  const done=[],missing=[];
+  jong.forEach(row=>{
+    const c=byName[norm(ALIAS[row.n]||row.n)];
+    if(!c) missing.push({name:row.n,why:'미보유'});
+    else if(!c.rel.length&&!c.orn.length) missing.push({name:row.n,why:'유물 미착용'});
+    else done.push(evalChar(row,c));
+  });
+  return {done,missing};
+}
+
+// ===== 시트 읽기 (읽기 전용: GET만, 로그인 정보 없이) =====
+function parseDelimited(text, sep){
+  const rows=[]; let row=[], cell='', q=false;
+  for (let i=0;i<text.length;i++){
+    const ch=text[i];
+    if (q){ if(ch==='"'){ if(text[i+1]==='"'){cell+='"';i++} else q=false } else cell+=ch; continue; }
+    if (ch==='"' && cell==='') { q=true; continue; }
+    if (ch===sep){ row.push(cell); cell=''; continue; }
+    if (ch==='\r') continue;
+    if (ch==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; continue; }
+    cell+=ch;
+  }
+  if (cell!==''||row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+const STAT_WORD = [['효과명중','ehr'],['효과 명중','ehr'],['효명','ehr'],['격파특수효과','be'],['격파 특수효과','be'],['격특','be'],['공격력','atk'],['공','atk'],['HP','hp'],['체력','hp'],['방어력','def'],['방어','def'],['방','def'],['속도','spd'],['치확','cr'],['치피','cd']];
+function statLine(line){
+  const L=line.trim();
+  for (const [w,k] of STAT_WORD){
+    if (L.startsWith(w)){
+      const m=L.slice(w.length).match(/^\s*([\d.]+)\s*%?\s*(미만|이상|↑|\+)?/);
+      if (m) return [k, parseFloat(m[1]), m[2]==='미만'?'max':'min'];
+    }
+  }
+  return null;
+}
+const splitSets = s => s.split(/[\n\/,]+/).map(x=>x.trim()).filter(Boolean).map(x=>x==='아무거나'?'*':x);
+function parseCrit(cell, row){
+  const lines=cell.split('\n').map(x=>x.trim()).filter(Boolean);
+  const pairs=[];
+  lines.forEach((l,i)=>{
+    const m=l.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+    if (m){ const nxt=(lines[i+1]||'')+l; const r=l.match(/(\d)\s*돌/)||((lines[i+1]||'').match(/^\(?\s*(\d)\s*돌/)); pairs.push([r?+r[1]:0,+m[1],+m[2]]); }
+    else { const s=statLine(l); if(s&&s[0]==='cd') row.cd=s[1]; if(s&&s[0]==='cr') row.cr=s[1]; }
+  });
+  if (pairs.length===1){ row.cr=pairs[0][1]; row.cd=pairs[0][2]; }
+  else if (pairs.length>1){ pairs.sort((a,b)=>a[0]-b[0]); pairs[0][0]=0; row.crit=pairs; }
+}
+function parseJongRows(rows){
+  const h=rows.findIndex(r=>r.some(c=>c.includes('캐릭명'))&&r.some(c=>c.includes('치명타')));
+  if (h<0) throw new Error('머리글(캐릭명·치명타)을 찾지 못했어요');
+  const H=rows[h].map(c=>c.replace(/\s+/g,''));
+  const col={name:H.findIndex(c=>c.includes('캐릭명')),cav:H.findIndex(c=>c.includes('4세트')),orn:H.findIndex(c=>c.includes('장신구')),
+    main:H.findIndex(c=>c.startsWith('주옵')),crit:H.findIndex(c=>c.includes('치명타')),etc:H.findIndex(c=>c.includes('기타'))};
+  for (const k in col) if (col[k]<0 && k!=='etc') throw new Error('"'+k+'" 열을 찾지 못했어요');
+  const out=[]; let pending=[]; let held=null;
+  const g=(r,i)=>i>=0?String(r[i]||'').trim():'';
+  const finalize=(name)=>{
+    if (!pending.length) return;
+    const b=pending[0];
+    const row={n:name.replace(/\s+/g,' ').trim(),cav:splitSets(b.cav).filter(x=>x!=='*'),orn:splitSets(b.orn),t:[],note:''};
+    if (!row.orn.length) row.orn=['*'];
+    const mainT=b.main.split('\n').map(statLine).filter(Boolean);
+    const vars=pending.slice(1).map(x=>x.main.split('\n').map(statLine).filter(Boolean)).filter(v=>v.length);
+    if (vars.length) row.variants=[mainT].concat(vars); else row.t=mainT;
+    parseCrit(pending.map(x=>x.crit).join('\n'),row);
+    const notes=[];
+    for (const l of pending.map(x=>x.etc).join('\n').split('\n').map(x=>x.trim()).filter(Boolean)){
+      const orb=l.match(/^(공격력|HP|방어력|물리|화염|얼음|번개|바람|양자|허수)\s*(속성)?\s*(피해)?\s*구체/);
+      if (orb){ row.orb=ORB_WORD[orb[1]]; notes.push(l); continue; }
+      const s=statLine(l); if (s){ row.t.push(s); notes.push(l); continue; }
+      notes.push(l);
+    }
+    row.note=notes.join(' · ');
+    out.push(row); pending=[];
+  };
+  for (let i=h+1;i<rows.length;i++){
+    const r=rows[i]; const d={cav:g(r,col.cav),orn:g(r,col.orn),main:g(r,col.main),crit:g(r,col.crit),etc:g(r,col.etc)};
+    const name=g(r,col.name); const hasData=Object.values(d).some(Boolean);
+    if (hasData){
+      if (d.cav||d.orn||!pending.length) pending.push(d); else { pending.push(d); }
+      if (name){ finalize(name); held=null; }
+    } else if (name){
+      if (pending.length) finalize(name); else held=name;
+    }
+  }
+  if (pending.length && held) finalize(held);
+  if (!out.length) throw new Error('캐릭터를 하나도 읽지 못했어요');
+  return out;
+}
+// 공유 링크 → 읽기 전용 CSV 주소 (GET만 함. 로그인 정보·쓰기 요청 없음)
+function sheetCsvUrl(url){
+  const id=(url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)||[])[1];
+  const gid=(url.match(/[#&?]gid=(\d+)/)||[])[1]||'0';
+  if (!id) return null;
+  return 'https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=out:csv&headers=0&gid='+gid;
+}
+
+
+// ===== 세팅 탭 =====
+const PATHN = {1:'파멸',2:'수렵',3:'지식',4:'화합',5:'공허',6:'보존',7:'풍요',8:'기억',9:'환락'};
+const SUP = /[¹²³⁴⁵⁶⁷⁸⁹⁰⁾]+\)?|\*+/g;               // 각주 표시
+const clean = s => String(s||'').replace(SUP,' ').replace(/\([^)]*\)/g,' ').replace(/\s+/g,' ').trim();
+const footed = s => /[¹²³⁴⁵⁶⁷⁸⁹⁰]/.test(s);
+// "속도 2+2" 같은 표기에 쓰는 2세트 효과 묶음
+const CAT2 = {'속도':[114,121,125,130,133],'속':[114,121,125,130,133],'공격력':[102,116,120,123,131],'공':[102,116,120,123,131],
+  '격특':[111,118,119],'격':[111,118,119],'HP':[113,132],'체':[113,132],'치확':[122,127],'치피':[126,129,134]};
+const MAINW = [['치명타 확률',52],['치명타 피해',53],['치확',52],['치피',53],['효과 명중',56],['효과명중',56],['효명',56],['치유량 증가',55],['치유량 보너스',55],['치유량',55],
+  ['에너지 회복효율',54],['격파 특수효과',59],['격파특수효과',59],['격특',59],['효과 저항',57],['효과저항',57],['공격력',33],['HP',32],['방어력',34],['속도',51],
+  ['양자 피해',22],['번개 피해',18],['얼음 피해',16],['화염 피해',14],['바람 피해',20],['물리 피해',12],['허수 피해',24],['아무거나','*']];
+function mainTypes(cell){
+  const out=new Set();
+  for (const part of String(cell||'').split(/[\n,]+/)){
+    let p=clean(part);
+    for (const [w,t] of MAINW){ if (p.includes(w)){ out.add(t); p=p.split(w).join(' '); } }
+  }
+  return [...out];
+}
+const splitOpts = cell => String(cell||'').split(/\n|,|\s+or\s+/).map(clean).filter(Boolean);
+const nickId = n => NICK[norm(n)];
+function cavOpt(o, cc){ // 터널 세트 표기 하나가 맞는지
+  if (o==='아무거나') return true;
+  let m=o.match(/^(\S+?)\s*2\s*\+\s*2$/);
+  if (m && CAT2[m[1]]) return CAT2[m[1]].filter(id=>cc[id]>=2).length>=2;
+  m=o.match(/^(\S+?)\s*2\s*\+\s*(\S+?)\s*2$/);
+  if (m && CAT2[m[1]] && CAT2[m[2]]){ const a=CAT2[m[1]].filter(id=>cc[id]>=2), b=CAT2[m[2]].filter(id=>cc[id]>=2); return a.some(x=>b.some(y=>y!==x)); }
+  m=o.match(/^(.+?)\s*\+\s*(.+)$/);
+  if (m){ const a=nickId(m[1]), b=nickId(m[2]); return a!=null&&b!=null&&cc[a]>=2&&cc[b]>=2; }
+  const id=nickId(o); return id!=null && cc[id]>=4;
+}
+const ornOpt = (o, oc) => o==='아무거나' || (nickId(o)!=null && oc[nickId(o)]>=2);
+function parseTargetCells(mainCell, critCell){
+  const row={t:[],notes:[]}; const seen={};
+  const lines=String(mainCell||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  // 각주 없는 줄을 먼저, 같은 스탯이 또 나오면 첫 값만
+  lines.sort((a,b)=>footed(a)-footed(b));
+  for (const l of lines){ const s=statLine(clean(l)); if (s&&!seen[s[0]]){ seen[s[0]]=1; if(s[0]==='cr')row.cr=s[1]; else if(s[0]==='cd')row.cd=s[1]; else row.t.push(s); } }
+  const cl=String(critCell||'').split('\n').map(x=>x.trim()).filter(Boolean).sort((a,b)=>footed(a)-footed(b));
+  for (const l of cl){
+    const c=clean(l), m=c.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+    if (m){ if(row.cr==null&&row.cd==null){row.cr=+m[1];row.cd=+m[2]} continue; }
+    const s=statLine(c); if (s&&s[0]==='cr'&&row.cr==null) row.cr=s[1]; if (s&&s[0]==='cd'&&row.cd==null) row.cd=s[1];
+  }
+  return row;
+}
+function parseSettingRows(rows){
+  const h=rows.findIndex(r=>r.some(c=>c.replace(/\s/g,'')==='캐릭명')&&r.some(c=>c.replace(/\s/g,'').startsWith('운명')));
+  if (h<0) throw new Error('머리글(캐릭명·운명의 길)을 찾지 못했어요');
+  const H=rows[h].map(c=>c.replace(/\s+/g,'')), H2=(rows[h+1]||[]).map(c=>c.replace(/\s+/g,''));
+  const f=p=>H.findIndex(p);
+  const col={name:f(c=>c==='캐릭명'),path:f(c=>c.startsWith('운명')),trace:f(c=>c.startsWith('행적')),pos:f(c=>c==='포지션'),lc:f(c=>c.includes('광추')),
+    cav:f(c=>c.includes('(세트)')),orn:f(c=>c.includes('(장신구)')),subs:f(c=>c.includes('유효')),eid:f(c=>c.includes('성혼')),
+    main:f(c=>c==='주옵'),crit:f(c=>c==='치명타'),etc:f(c=>c==='기타')};
+  const opt=f(c=>c==='유물옵션');
+  const sl={3:H2.indexOf('상의'),4:H2.indexOf('신발'),5:H2.indexOf('구체'),6:H2.indexOf('매듭')};
+  if (sl[3]<0 && opt>=0){ sl[3]=opt; sl[4]=opt+1; sl[5]=opt+2; sl[6]=opt+3; }
+  for (const k of ['name','cav','orn','main','crit']) if (col[k]<0) throw new Error('"'+k+'" 열을 찾지 못했어요');
+  const g=(r,i)=>i>=0?String(r[i]||'').trim():'';
+  const start = sl[3]>=0 && H2.indexOf('상의')>=0 ? h+2 : h+1;
+  const out=[]; let pending=[];
+  const finalize=name=>{
+    const builds=[];
+    for (const r of pending){
+      const isNew = !builds.length || g(r,col.pos) || g(r,col.path);
+      const b = isNew ? {label:clean(g(r,col.pos))||'기본',trace:null,cav:[],orn:[],slots:{3:[],4:[],5:[],6:[]},subs:[],t:[],notes:[]} : builds[builds.length-1];
+      if (isNew) builds.push(b);
+      const tr=g(r,col.trace).split('\n')[0].match(/^\s*(\d+)\s*[,.]\s*(\d+)\s*[,.]\s*(\d+)\s*[,.]\s*(\d+)/);
+      if (tr && !b.trace) b.trace=tr.slice(1,5).map(Number);
+      for (const o of splitOpts(g(r,col.cav))) if(!b.cav.includes(o)) b.cav.push(o);
+      for (const o of splitOpts(g(r,col.orn))) if(!b.orn.includes(o)) b.orn.push(o);
+      for (const p of [3,4,5,6]) for (const t of mainTypes(g(r,sl[p]))) if(!b.slots[p].includes(t)) b.slots[p].push(t);
+      for (const t of mainTypes(g(r,col.subs))) if(t!=='*'&&!b.subs.includes(t)) b.subs.push(t);
+      const tg=parseTargetCells(g(r,col.main),g(r,col.crit));
+      if (isNew || (!b.t.length && b.cr==null)){ b.t=tg.t; if(tg.cr!=null)b.cr=tg.cr; if(tg.cd!=null)b.cd=tg.cd; }
+      const note=g(r,col.etc); if (note) b.notes.push(note.replace(/\n/g,' · '));
+      if (!b.lc && g(r,col.lc)) b.lc=clean(g(r,col.lc).split('\n')[0]);
+    }
+    const useful=builds.filter(b=>b.cav.length||b.orn.length||[3,4,5,6].some(p=>b.slots[p].length));
+    if (useful.length) out.push({n:name.replace(/\s+/g,' ').trim(),builds:useful});
+    pending=[];
+  };
+  for (let i=start;i<rows.length;i++){
+    const r=rows[i]; const name=g(r,col.name);
+    const has=Object.entries(col).some(([k,c])=>k!=='name'&&g(r,c)) || [3,4,5,6].some(p=>g(r,sl[p]));
+    if (has) pending.push(r);
+    if (name) finalize(name);
+  }
+  if (!out.length) throw new Error('캐릭터를 하나도 읽지 못했어요');
+  return out;
+}
+
+// ===== 판정 =====
+const SLOTN={3:'몸통',4:'신발',5:'구체',6:'매듭'};
+const SUBN={27:'HP',32:'HP%',29:'공격력',33:'공격력%',31:'방어력',34:'방어력%',51:'속도',52:'치확',53:'치피',56:'효과 명중',57:'효과 저항',58:'격특',59:'격특'};
+const sameMain=(a,b)=>a===b||((a===58||a===59)&&(b===58||b===59));
+function hits(ch, list){ // 유효 부옵 명중 = 해당 부옵들의 강화 횟수(최초 포함) 합
+  const by={}; let total=0;
+  for (const p of ch.rel.concat(ch.orn)) for (const [t,,n] of p.s){ if (list.some(x=>sameMain(x,t))){ by[t]=(by[t]||0)+(n||0); total+=(n||0); } }
+  return {total, by};
+}
+function buildChecks(sb, ch, name){
+  const cc=counts(ch.rel), oc=counts(ch.orn), pieces={};
+  for (const p of ch.rel.concat(ch.orn)) pieces[p.pos]=p;
+  const worn=Object.entries(cc).filter(([,v])=>v>=2).map(([k,v])=>setName(+k)+' '+v).join(' + ')||'세트 효과 없음';
+  const owear=Object.entries(oc).filter(([,v])=>v>=2).map(([k])=>setName(+k)).join(', ')||'세트 효과 없음';
+  const res={cav:null,orn:null,slots:{},trace:null};
+  const pairOk=PAIR_OK[name]&&sb.cav.filter(o=>nickId(o)!=null&&cc[nickId(o)]>=2).length>=2;
+  if (sb.cav.length) res.cav={k:'4세트',ok:pairOk||sb.cav.some(o=>cavOpt(o,cc)),cur:worn,tgt:sb.cav.join(' / ')};
+  if (sb.orn.length) res.orn={k:'장신구',ok:sb.orn.some(o=>ornOpt(o,oc)),cur:owear,tgt:sb.orn.join(' / ')};
+  for (const p of [3,4,5,6]){
+    const opts=sb.slots[p]; if (!opts.length) continue;
+    const cur=pieces[p]?pieces[p].m[0]:null;
+    res.slots[p]={k:SLOTN[p]+' 주옵',ok:opts.includes('*')||(cur!=null&&opts.some(o=>sameMain(o,cur))),cur:cur==null?'없음':mainName(cur),tgt:opts.includes('*')?'아무거나':opts.map(mainName).join(' / ')};
+  }
+  if (sb.trace && ch.tr && ch.tr.every(x=>x!=null)){
+    const ok=sb.trace.every((v,i)=>ch.tr[i]>=v);
+    res.trace={k:'행적',ok,cur:ch.tr.join(','),tgt:sb.trace.join(','),why:ok?'':['일반 공격','전투 스킬','필살기','특성'].filter((_,i)=>ch.tr[i]<sb.trace[i]).join('·')+' 부족'};
+  }
+  return res;
+}
+function pickBuild(sc, ch){ const name=sc.n;
+  let best=null;
+  for (const b of sc.builds){
+    const r=buildChecks(b,ch,name); const arr=[r.cav,r.orn,...Object.values(r.slots)].filter(Boolean);
+    const sc_=arr.filter(x=>x.ok).length*10 - arr.length*0.01;
+    if (!best||sc_>best.s) best={b,r,s:sc_};
+  }
+  return best;
+}
+function recommend2(trow, ch, sb, orbForce, gainOnly){
+  const S0=statsOf(ch), base=ch.base, rank=ch.r;
+  const hasT = trow && ((trow.t&&trow.t.length)||trow.cr!=null||trow.cd!=null||trow.variants);
+  const tkeys=hasT?[...new Set(resolveTargets(trow,rank,S0).map(x=>x.k))]:[];
+  const out=[]; const L=leveled(ch);
+  const score=S=>hasT?avgP(resolveTargets(trow,rank,S)):0;
+  const sL=score(L.S), s0=score(S0);
+  if (L.low.length) out.push({kind:'level',slot:L.low.map(p=>POS_NAME[p.pos]+' +'+p.lv).join(', '),d:sL-s0,changes:diffs(tkeys,S0,L.S)});
+  const pieces={}; for (const p of ch.rel.concat(ch.orn)) pieces[p.pos]=p;
+  for (const pos of [3,4,5,6]){
+    const p=pieces[pos], cur=p?p.m[0]:null;
+    let opts = sb && sb.slots[pos].length && !sb.slots[pos].includes('*') ? sb.slots[pos].slice() : null;
+    if (pos===5 && orbForce!=null) opts=[orbForce];
+    const curOk = opts ? (cur!=null && opts.some(o=>sameMain(o,cur))) : true;
+    let cands = opts || SLOT[pos][1];
+    if (!opts && cur!=null && ((KEEP[pos]||[]).includes(cur) || (pos===5&&ELEM_T.includes(cur)))) continue;
+    let best=null;
+    for (const m of cands){
+      if (cur!=null && sameMain(m,cur)) continue;
+      const S={...L.S};
+      if (p){ const c=contrib(p.m[0],mainMax(p.m[0])??p.m[1],base); if(c&&S[c[0]]!=null) S[c[0]]-=c[1]; }
+      const add=contrib(m, mainMax(m), base); let lostSub=0;
+      if (add){ if (p) for (const [st,v] of p.s){ const c=contrib(st,v,base); if(c&&c[0]===add[0]){ S[c[0]]-=c[1]; lostSub+=c[1]; } } S[add[0]]=(S[add[0]]||0)+add[1]; }
+      const d=score(S)-sL;
+      if (!best||d>best.d) best={kind:'swap',pos,slot:SLOTN[pos],from:cur==null?'없음':mainName(cur),to:mainName(m),d,S,lostSub,lostName:add?STATK[add[0]][1]:'',forced:!curOk,sheet:!!opts};
+    }
+    const orbFix = pos===5 && orbForce!=null && !curOk;
+    if (best && gainOnly && !orbFix && best.d < 0.5) best=null;          // 종결 기준: 수치가 오르는 교체만
+    if (best && (!curOk || best.d>=0.5)){ best.changes=diffs(tkeys,L.S,best.S); delete best.S; out.push(best); }
+  }
+  const lv=out.filter(x=>x.kind==='level'), sw=out.filter(x=>x.kind==='swap').sort((a,b)=>(b.forced-a.forced)||(b.d-a.d));
+  return lv.concat(sw.slice(0,4));
+}
+function keysFor(c){
+  const k=[norm(c.n)];
+  if (c.n==='개척자') k.push(norm('개척자•'+PATHN[c.pt]));
+  if (/^Mar\./.test(c.n)) k.push(norm('Mar.7•'+PATHN[c.pt]));
+  return k;
+}
+// mode: 'jong'(종결 탭 기준) | 'set'(세팅 탭 기준)
+function analyze2(chars, jong, setting, mode){
+  const by={}; for (const c of chars) for (const k of keysFor(c)) by[k]=c;
+  const find=n=>by[norm(ALIAS[n]||n)];
+  const setBy={}; for (const s of setting) setBy[norm(ALIAS[s.n]||s.n)]=s;
+  const jongBy={}; for (const j of jong) jongBy[norm(ALIAS[j.n]||j.n)]=j;
+  const names = mode==='jong' ? jong.map(j=>j.n) : setting.map(s=>s.n);
+  const done=[], missing=[];
+  for (const n of names){
+    const c=find(n);
+    if (!c){ missing.push({name:n,why:'미보유'}); continue; }
+    if (!c.rel.length && !c.orn.length){ missing.push({name:n,why:'유물 미착용'}); continue; }
+    const key=norm(ALIAS[n]||n), jr=jongBy[key], sc=setBy[key];
+    const pick=sc?pickBuild(sc,c):null, sb=pick?pick.b:null, sr=pick?pick.r:null;
+    const checks=[];
+    if (mode==='jong'){
+      const e=evalChar(jr,c);
+      checks.push(...e.checks.filter(x=>x.k!=='구체 주옵'));
+      if (sr) for (const p of [3,4,6]) if (sr.slots[p]) checks.push({...sr.slots[p],src:'세팅 탭'});
+      if (jr.orb!=null) checks.push(e.checks.find(x=>x.k==='구체 주옵'));
+      else if (sr && sr.slots[5]) checks.push({...sr.slots[5],src:'세팅 탭'});
+      if (sr && sr.trace) checks.push({...sr.trace,src:'세팅 탭'});
+      checks.sort((a,b)=>ORDER.indexOf(a.k)-ORDER.indexOf(b.k));
+      var items=e.items, total=e.total, note=e.note, trow=jr;
+    } else {
+      for (const x of [sr.cav,sr.orn,...[3,4,5,6].map(p=>sr.slots[p]),sr.trace]) if (x) checks.push(x);
+      const S=statsOf(c), ts=(sb.t.length||sb.cr!=null||sb.cd!=null)?resolveTargets(sb,c.r,S):[];
+      var items=ts.map(x=>({k:STATK[x.k][1],cur:S[x.k]==null?'-':fmt(S[x.k],STATK[x.k][2]),tgt:x.mode==='max'?x.val+STATK[x.k][2]+' 미만':fmt(x.val,STATK[x.k][2]),p:x.p}));
+      var total=ts.length?avgP(ts):null, note=sb.notes.join(' · '), trow=sb;
+    }
+    const allOk=checks.every(x=>x.ok);
+    const hy=c.rec&&c.rec.list.length?hits(c,c.rec.list):null;
+    const sh=sb&&sb.subs.length?hits(c,sb.subs):null;
+    done.push({name:n,rank:c.r,total,items,checks,allOk,complete:allOk&&(total==null||total>=99.95),note,
+      build:sb&&sc.builds.length>1?sb.label:'',hy,hyCustom:c.rec?c.rec.custom:false,hyList:c.rec?c.rec.list:[],sh,shList:sb?sb.subs:[],
+      rec:recommend2(trow,c,sb,mode==='jong'&&jr&&jr.orb!=null?jr.orb:null,mode==='jong')});
+  }
+  return {done,missing};
+}
+const ORDER=['4세트','장신구','몸통 주옵','신발 주옵','구체 주옵','매듭 주옵','행적'];
+
+
+const EXAMPLE = [];
+const SETTING_BUILTIN = [{"n":"제레","builds":[{"label":"단일 딜러","trace":[6,10,10,10],"cav":["천재","아집","선장"],"orn":["그라모스","정거장","뭇별"],"slots":{"3":[52,53],"4":[33,51],"5":[33,22],"6":[33]},"subs":[52,53,33,51],"t":[["atk",3200,"min"]],"notes":["¹⁾ 마을 속도 131.3 이상일 때 전광 풀버프 가능\r · ²⁾ 스파클 조합 필수\r · ³⁾ 선데이 조합 시 치확 80%까지\r · ⁴⁾ A/S 이후 공구체 우세"],"cr":100,"cd":140,"lc":"야경 속에서"}]},{"n":"청작","builds":[{"label":"확산 딜러","trace":[6,10,10,10],"cav":["시인","천재"],"orn":["텐고쿠","도시"],"slots":{"3":[52,53],"4":[33],"5":[22,33],"6":[33]},"subs":[52,53,33,51],"t":[["atk",3000,"min"],["spd",95,"max"]],"notes":["¹⁾ 시인셋 기준"],"cr":100,"cd":150,"lc":"고요히 빛나는 불티"}]},{"n":"은랑","builds":[{"label":"디버퍼","trace":[1,10,10,10],"cav":["매","명장","속도 2+2"],"orn":["바커공","루샤카"],"slots":{"3":[56],"4":[51],"5":["*"],"6":[54]},"subs":[51,56],"t":[["ehr",67,"min"],["spd",166.7,"min"]],"notes":["¹⁾ 매셋 착용 시 필살기 가동률을 위해 권장"],"lc":"바람에 흩날리는 거짓말"}]},{"n":"부현","builds":[{"label":"탱커","trace":[1,10,10,1],"cav":["제자 + 명장"],"orn":["용골","루샤카"],"slots":{"3":[32],"4":[51,32],"5":[32],"6":[54]},"subs":[32,51,57,34],"t":[["hp",8000,"min"],["spd",133.4,"min"]],"notes":["¹⁾ 아케론 등 디버프 필요 조합에서 사용"],"lc":"그녀는 두 눈을 감았네"}]},{"n":"링스","builds":[{"label":"힐러","trace":[1,10,10,10],"cav":["여전사","과객"],"orn":["용골","루샤카"],"slots":{"3":[55],"4":[51,32],"5":[32],"6":[54]},"subs":[32,51,34],"t":[["hp",5000,"min"],["spd",160,"min"]],"notes":[],"lc":"섬뜩한 밤"}]},{"n":"설의","builds":[{"label":"확산 딜러","trace":[1,10,10,10],"cav":["철기군"],"orn":["탈리아","연마궁"],"slots":{"3":["*"],"4":[51,33],"5":["*"],"6":[59]},"subs":[52,53,33,51,59],"t":[["be",200,"min"],["spd",145,"min"]],"notes":["¹⁾ 달리아 조합 시\r · ²⁾ 순수 격특딜러로 사용 시 치명타 유기"],"lc":"꿈은 어디로 돌아가야 하는가"},{"label":"확산 딜러","trace":null,"cav":["천재"],"orn":["살소토"],"slots":{"3":[52],"4":[],"5":[22,33],"6":[]},"subs":[],"t":[],"notes":[]}]},{"n":"스파클","builds":[{"label":"서포터","trace":[1,10,10,10],"cav":["사제","매"],"orn":["루샤카","바커공"],"slots":{"3":[53],"4":[51],"5":[32,34],"6":[54]},"subs":[51,53],"t":[["spd",133.4,"min"]],"notes":["¹⁾ 167.4속 3행동 세팅 시 댄댄 필수\r · ²⁾ 1돌  매 + 전광 사용 시 속도 168.3 이상"],"cd":200,"lc":"속세에서의 유희"}]},{"n":"제이드","builds":[{"label":"광역 딜러","trace":[6,10,10,10],"cav":["시인","대공","천재"],"orn":["도람","츠가냐","살소토","이즈모"],"slots":{"3":[52],"4":[33],"5":[22,33],"6":[33]},"subs":[52,53,33],"t":[["atk",3200,"min"]],"notes":["¹⁾ 시인 착용 시 속도 부옵션 0개 필수\r · ²⁾ 특성으로 치피 120% 자버프 가능."],"cr":100,"cd":80,"lc":"값을 매길 수 없는 건 희망뿐"}]},{"n":"트리비","builds":[{"label":"서포터 디버퍼","trace":[6,10,10,10],"cav":["시인","매"],"orn":["습골지","루샤카","바커공"],"slots":{"3":[52,53,32],"4":[32,51],"5":[32],"6":[54]},"subs":[52,53,32,51],"t":[["spd",95,"max"],["hp",6000,"min"]],"notes":["¹⁾ 매+댄댄 기준 필살기 2회 3행동\r · ²⁾ 매+바커+댄댄 기준 필살기 1회 3행동"],"cr":68,"cd":200,"lc":"시간이 한 송이 꽃이라면"}]},{"n":"카스토리스","builds":[{"label":"광역 딜러","trace":[1,10,10,10],"cav":["시인","구세주"],"orn":["습골지"],"slots":{"3":[53,32,52],"4":[32],"5":[32,22],"6":[32]},"subs":[52,53,32],"t":[["hp",9000,"min"]],"notes":["¹⁾ 4기억 2222 파티 고점빌드\r · ²⁾ 히아킨 1돌 이상일 시 고려"],"cr":68,"cd":180,"lc":"이별이 더 아름답도록"}]},{"n":"사이퍼","builds":[{"label":"디버퍼","trace":[6,10,10,10],"cav":["속도 2+2","선구자","명장"],"orn":["루샤카","바커공","이즈모"],"slots":{"3":[53,52],"4":[51],"5":[22,33],"6":[33]},"subs":[51,52,53,33,56],"t":[["spd",170,"min"]],"notes":["¹⁾ 전광, 땀방울 착용 시\r · ²⁾ 종결은 200 이상"],"cr":50,"cd":100,"lc":"바람에 흩날리는 거짓말"}]},{"n":"아처","builds":[{"label":"단일 딜러","trace":[1,10,10,10],"cav":["아집","천재"],"orn":["텐고쿠","뭇별"],"slots":{"3":[52,53],"4":[33],"5":[22],"6":[33]},"subs":[52,53,33],"t":[["atk",3000,"min"]],"notes":["스파클 전광 치확 10\r · 린 포함 시 아처 1돌 효율 감소"],"cr":100,"cd":100,"lc":"거짓말의 종막"}]},{"n":"토오사카 린","builds":[{"label":"연계 딜러","trace":[1,10,10,10],"cav":["학자","천재"],"orn":["도시","텐고쿠"],"slots":{"3":[52,53],"4":[51,33],"5":[22],"6":[33]},"subs":[52,53,51,33],"t":[["atk",2500,"min"],["spd",134,"min"]],"notes":["스파클 전광 치확 10\r · 본인 속도 버프 20.4"],"cr":100,"cd":120,"lc":"고요히 빛나는 불티"},{"label":"서포터","trace":null,"cav":["매"],"orn":["도시"],"slots":{"3":[],"4":[51],"5":[],"6":[54,33]},"subs":[],"t":[["spd",158,"min"]],"notes":["매댄댄바커공 속도 158+ 스파클 사용\r · 스파클 - 린 - 스파클 - 린...이 되도록 속도 세팅"],"cr":100}]},{"n":"어벤츄린•웨이브","builds":[{"label":"환락 딜러","trace":[1,10,10,10],"cav":["마법소녀","점술가"],"orn":["펑크 로드"],"slots":{"3":[52,53],"4":[51],"5":[22,33],"6":[54]},"subs":[52,53,51],"t":[["spd",170,"min"]],"notes":["점술가 중복 불가능 주의"],"cr":100,"cd":100,"lc":"파도에 내던진 한여름"}]},{"n":"에이언즈★아하","builds":[{"label":"환락 서포터","trace":[6,10,10,10],"cav":["연극인"],"orn":["환락"],"slots":{"3":[52,53],"4":[51],"5":[32,34],"6":[]},"subs":[51,52,53],"t":[["spd",185,"min"]],"notes":["2돌 치확 +8%"],"cr":88,"lc":"「아하」가 처음 울리는 순간"}]},{"n":"백로","builds":[{"label":"힐러","trace":[1,10,10,10],"cav":["과객","여전사"],"orn":["거목","루샤카","용골"],"slots":{"3":[55],"4":[51,32],"5":[32],"6":[54,32]},"subs":[32,57,51,34],"t":[["hp",6000,"min"],["spd",160,"min"]],"notes":[],"lc":"내일의 내일이 올때까지"}]},{"n":"서벌","builds":[{"label":"광역 딜러","trace":[1,10,10,10],"cav":["뇌전"],"orn":["살소토"],"slots":{"3":[52,53],"4":[51,33],"5":[18],"6":[33,54]},"subs":[52,53,33,51],"t":[["atk",2200,"min"]],"notes":[],"cr":70,"cd":140,"lc":"동트기 전"},{"label":"필살기 발사대","trace":[1,1,1,1],"cav":["매","속도 2+2"],"orn":["루샤카"],"slots":{"3":[56],"4":[51],"5":["*"],"6":[54]},"subs":[51,56],"t":[["ehr",108.4,"min"],["spd",166.7,"min"]],"notes":["¹⁾ 매셋 기준"],"lc":"영험한 열쇠"}]},{"n":"정운","builds":[{"label":"서포터","trace":[1,10,10,10],"cav":["사제","속도 2+2"],"orn":["바커공","루샤카","도시"],"slots":{"3":[33],"4":[51],"5":[33],"6":[54]},"subs":[33,51],"t":[["spd",134,"min"],["atk",2875,"min"]],"notes":["¹⁾ 정운 6돌 기준"],"lc":"댄스! 댄스! 댄스!"}]},{"n":"경원","builds":[{"label":"바운스 딜러","trace":[1,10,10,10],"cav":["대공","용맹","선장"],"orn":["살소토","나나 낙원"],"slots":{"3":[52,53],"4":[51,33],"5":[18,33],"6":[33]},"subs":[52,53,33,51],"t":[["spd",133.4,"min"],["atk",3000,"min"]],"notes":["¹⁾ 번구체 기준. 공구체는 3500\r · ²⁾ 선데이 치확 20%, 경원 추가능력 10%로 30% 확보"],"cr":70,"cd":160,"lc":"동트기 전"}]},{"n":"카프카","builds":[{"label":"지속딜 트리거","trace":[1,1,10,10],"cav":["매","죄수"],"orn":["루샤카","일각"],"slots":{"3":[33,56],"4":[51],"5":[18,33],"6":[54]},"subs":[51,56,33],"t":[["spd",166.7,"min"],["ehr",75,"min"]],"notes":["¹⁾ 4돌 이상 권장\r · ²⁾ 대부분의 경우 매 + 초임시 세팅이 우위"],"lc":"초보자 임무 시작 전"}]},{"n":"아를란","builds":[{"label":"확산 딜러","trace":[1,10,10,10],"cav":["학자"],"orn":["살소토","뭇별"],"slots":{"3":[52,53],"4":[51,33],"5":[18,33],"6":[33]},"subs":[52,53,33,34,32],"t":[["spd",133.4,"min"],["atk",3000,"min"]],"notes":["¹⁾ 번구체 기준. 공구체는 3500"],"cr":80,"cd":110,"lc":"대체할 수 없는 것"}]},{"n":"아케론","builds":[{"label":"광역 딜러","trace":[1,10,10,10],"cav":["선구자","대공"],"orn":["이즈모","살소토"],"slots":{"3":[52,53],"4":[51,33],"5":[33,18],"6":[33]},"subs":[52,53,33,51],"t":[["spd",133.4,"min"],["atk",3400,"min"]],"notes":["¹⁾ 천야 블레이드 2돌 이상\r · 전투 내에서 얻는 치확: 1돌 18%, 이즈모 12%, 선구자 4%"],"cr":84,"cd":160,"lc":"흘러가는 강가를 따라"},{"label":"AS 아케론","trace":null,"cav":["파티원 전원 매"],"orn":["파티원 전원 바커공"],"slots":{"3":[],"4":[33],"5":[18],"6":[]},"subs":[],"t":[["atk",3800,"min"],["spd",117,"min"]],"notes":["기연성혼 활성화 필수\r · 천야블 속도 168+, 애쉬베일 속도 유기 or 168+"],"cr":84}]},{"n":"맥택","builds":[{"label":"단일 딜러","trace":[1,10,10,10],"cav":["선구자","매"],"orn":["이즈모","도람","도시"],"slots":{"3":[52,53],"4":[33],"5":[18,33],"6":[33]},"subs":[52,53,33,51],"t":[["atk",2700,"min"]],"notes":["¹⁾ 번구체 기준. 공구체는 3000"],"cr":100,"cd":100,"lc":"고민, 그리고 행복"}]},{"n":"아글라이아","builds":[{"label":"확산 딜러","trace":[6,10,10,10],"cav":["영웅"],"orn":["나나 낙원","앰포리어스","생명과학연구원"],"slots":{"3":[52],"4":[51],"5":[18],"6":[54]},"subs":[52,51,53],"t":[["spd",159,"min"]],"notes":["¹⁾ 키레네 x, 134속 선데이 기준 아아선아 사이클 속도컷\r · ²⁾ 키레네가 있는 경우 속도 유기 가능\r · ³⁾ 공퍼, 치피 과다로 치확 100%가 1순위 목표\r · *수로빈 본섭 적용 후 변경 예정"],"cr":100,"lc":"시간을 황금으로 엮어"}]},{"n":"애쉬베일","builds":[{"label":"단일 딜러","trace":[1,10,10,10],"cav":["대공","선구자"],"orn":["도람","도시"],"slots":{"3":[52,53],"4":[51,33],"5":[33],"6":[33]},"subs":[52,53,33,51],"t":[["atk",3400,"min"],["spd",134,"min"]],"notes":[],"cr":100,"cd":120,"lc":"거짓말의 종막"},{"label":"서포터","trace":null,"cav":["매"],"orn":["바커공"],"slots":{"3":[52],"4":[51],"5":[33],"6":[54]},"subs":[],"t":[["spd",168,"min"]],"notes":[],"cr":100}]},{"n":"개척자•환락","builds":[{"label":"환락 서포터","trace":[1,10,10,10],"cav":["연극인","점술가","매","사제"],"orn":["루샤카","바커공","거목","연마궁","용골"],"slots":{"3":[52],"4":[51],"5":[33],"6":[54]},"subs":[51,52],"t":[["atk",2200,"min"],["spd",160,"min"]],"notes":["효광 전광 치확10, 점술가 치확 18\r · **점술가 중복 불가능 주의**"],"cr":85,"lc":"넘치는 환락의 축복"}]},{"n":"길가메시","builds":[{"label":"연계 딜러","trace":[1,10,10,10],"cav":["학자","매"],"orn":["생명과학연구원","바커공"],"slots":{"3":[52],"4":[51,33],"5":[18,33],"6":[33]},"subs":[52,53,33,51],"t":[["atk",2800,"min"],["spd",134,"min"]],"notes":[],"cr":100,"cd":100,"lc":"보이는 것이 곧 나"}]},{"n":"헤르타","builds":[{"label":"광역 딜러","trace":[1,10,10,10],"cav":["대공","대공 + 학자"],"orn":["도시","이즈모","도람","살소토"],"slots":{"3":[52,53],"4":[33],"5":[16],"6":[33]},"subs":[52,53,33],"t":[["atk",2500,"min"]],"notes":["¹⁾ 2돌 치확 15%\r · 이즈모 사용 시 -12%"],"cr":85,"cd":140,"lc":"값을 매길 수 없는 건 희망뿐"}]},{"n":"Mar.7•보존","builds":[{"label":"탱커","trace":[1,1,10,1],"cav":["은둔자"],"orn":["용골","루샤카"],"slots":{"3":[56,34],"4":[51],"5":[34],"6":[34,54]},"subs":[34,56,51],"t":[["def",3000,"min"]],"notes":[],"lc":"언제나 여정이 평탄하기를"}]},{"n":"페라","builds":[{"label":"디버퍼","trace":[1,10,1,10],"cav":["명장","매"],"orn":["연마궁","바커공","루샤카"],"slots":{"3":[32,56,34],"4":[51],"5":[32,34],"6":[54]},"subs":[56,51,33],"t":[["ehr",66.7,"min"],["spd",133.4,"min"]],"notes":[],"lc":"바람에 흩날리는 거짓말"}]},{"n":"게파드","builds":[{"label":"탱커","trace":[1,1,1,10],"cav":["은둔자"],"orn":["용골","루샤카","벨로보그"],"slots":{"3":[34],"4":[51,34],"5":[34],"6":[54]},"subs":[34,56,51],"t":[["def",3000,"min"],["ehr",66.7,"min"]],"notes":["¹⁾ 1돌 기준\r · 명함은 요구치가 너무 높기 때문에(156.4%)\r · 적당히 챙기고 유기"],"lc":"승리의 순간"}]},{"n":"연경","builds":[{"label":"단일 딜러","trace":[6,10,10,10],"cav":["학자"],"orn":["그라모스","살소토"],"slots":{"3":[53,52],"4":[33,51],"5":[16],"6":[33]},"subs":[52,53,33,51],"t":[["atk",3000,"min"]],"notes":[],"cr":80,"cd":160,"lc":"깊게 든 단잠"}]},{"n":"경류","builds":[{"label":"확산 딜러","trace":[1,10,10,10],"cav":["학자"],"orn":["습골지"],"slots":{"3":[32],"4":[32,51],"5":[32,16],"6":[32]},"subs":[52,32,51,53],"t":[["spd",133.4,"min"],["hp",8000,"min"]],"notes":["¹⁾ 선데이 사용 시. 선데이보다 조금 빠르게 세팅\r · ²⁾ 얼구체 사용 시 7000\r · ³⁾ 선데이 사용 시 치확 30%까지만\r · 치피보다 HP 효율이 높음"],"cr":50,"cd":150,"lc":"이 몸이 검이니"}]},{"n":"완•매","builds":[{"label":"서포터","trace":[1,10,10,10],"cav":["시계공","메신저","괴도"],"orn":["바커공","루샤카"],"slots":{"3":[32,34],"4":[51],"5":[32,34],"6":[54,59]},"subs":[59],"t":[["spd",120,"min"]],"notes":["¹⁾ 격파 파티에서는 비추천\r · ²⁾ 바커공 사용 시 120 이상. 6돌 미만은 저속 권장\r · ³⁾ 추가능력으로 20% 받으면 180%로 가피증 버프 최대치"],"lc":"바람을 쫓을 때, 기억 속 모습"}]},{"n":"미샤","builds":[{"label":"바운스 딜러","trace":[1,10,10,10],"cav":["학자"],"orn":["살소토"],"slots":{"3":[52,53],"4":[33,51],"5":[16],"6":[33]},"subs":[51,52,53,33],"t":[["atk",2400,"min"]],"notes":[],"cr":100,"cd":80,"lc":"어떤 에이언즈의 몰락"}]},{"n":"더 헤르타","builds":[{"label":"광역 딜러","trace":[1,10,10,10],"cav":["학자"],"orn":["이즈모","뭇별"],"slots":{"3":[52,53],"4":[51,33],"5":[16],"6":[33]},"subs":[51,52,33,53],"t":[["spd",133.4,"min"],["atk",3000,"min"]],"notes":["¹⁾ 2돌 이상\r · ²⁾ 얼구체 기준"],"cr":88,"cd":120,"lc":"추궁할 수 없는 곳을 향해"}]},{"n":"개척자•기억","builds":[{"label":"서포터 서브딜러","trace":[6,10,10,10],"cav":["구세주","속도 2+2","매"],"orn":["앰포리어스","루샤카","습골지","바커공"],"slots":{"3":[53,32],"4":[51],"5":[32],"6":[54,32]},"subs":[51,53],"t":[["hp",5000,"min"]],"notes":["¹⁾ 카스토리스 조합 한정\r · ²⁾ 133.4, 143, 160, 166.7 등 \r · 본인 상황과 여력에 맞는 세팅 사용"],"cd":200,"lc":"핑크빛 내일을 향해"}]},{"n":"에버나이트","builds":[{"label":"서포터 서브 딜러","trace":[1,10,10,10],"cav":["구세주"],"orn":["습골지"],"slots":{"3":[53],"4":[51,32],"5":[32,16],"6":[54,32]},"subs":[52,32,53,51],"t":[["hp",5500,"min"],["spd",120,"min"]],"notes":["¹⁾ 2돌 이상 권장\r · ²⁾ 구체 주옵만 체퍼인 기준"],"cr":65,"cd":180,"lc":"긴 밤의 별빛에게"},{"label":"메인 딜러","trace":null,"cav":[],"orn":[],"slots":{"3":[53],"4":[32],"5":[16,32],"6":[32]},"subs":[52,32,53],"t":[["hp",6500,"min"]],"notes":[]}]},{"n":"키레네","builds":[{"label":"서포터","trace":[6,10,10,10],"cav":["구세주","속도 2+2","메신저","매"],"orn":["앰포리어스","바커공","거목","연마궁"],"slots":{"3":[32,53,52],"4":[51],"5":[32,16],"6":[32]},"subs":[52,51,32,53],"t":[["spd",200,"min"]],"notes":["무조건 속도 180 + 먼저 맞추기\r · ¹⁾ 6돌 권장, 최소 2돌 ²⁾ 속도 6% 붙은 모든 장신구 가능\r · ³⁾ 치피갑 기준. 체갑은 + 1000\r · ⁴⁾ 주로 비기억 파티에서 매+바커 행동수 늘리는 세팅"],"cr":50,"lc":"이 순간처럼 영원한 사랑"},{"label":"메인 딜러","trace":null,"cav":[],"orn":["습골지"],"slots":{"3":[],"4":[],"5":[],"6":[]},"subs":[],"t":[],"notes":[]}]},{"n":"펄","builds":[{"label":"환락 힐러","trace":[6,10,10,10],"cav":["연극인","여전사","매"],"orn":["바커공"],"slots":{"3":[55,34],"4":[51],"5":[34],"6":[54]},"subs":[51,34],"t":[["def",2400,"min"],["spd",168,"min"]],"notes":["속도 우선\r · 환락도 보너스 방어력 최소 2400, 최대 6000 까지"],"lc":"내일에 바치는 색채"}]},{"n":"개척자•파멸","builds":[{"label":"확산 딜러","trace":[1,10,10,10],"cav":["격투왕","격투왕 + 학자","거너"],"orn":["정거장"],"slots":{"3":[52,53],"4":[33,51],"5":[12],"6":[33]},"subs":[52,53,33,51],"t":[["atk",3000,"min"]],"notes":[],"cr":80,"cd":120,"lc":"대체할 수 없는 것"}]},{"n":"나타샤","builds":[{"label":"힐러","trace":[1,10,10,10],"cav":["과객","여전사"],"orn":["거목","루샤카"],"slots":{"3":[55],"4":[51,32],"5":[32],"6":[54,32]},"subs":[32,51],"t":[["hp",6000,"min"],["spd",133.4,"min"]],"notes":[],"lc":"내일의 내일이 올때까지"}]},{"n":"소상","builds":[{"label":"단일 딜러","trace":[6,10,10,10],"cav":["거너","학자"],"orn":["뭇별","살소토"],"slots":{"3":[52,53],"4":[33,51],"5":[12],"6":[33]},"subs":[52,53,33,51],"t":[["atk",3000,"min"]],"notes":[],"cr":80,"cd":120,"lc":"야경 속에서"}]},{"n":"클라라","builds":[{"label":"반격 딜러","trace":[1,10,10,10],"cav":["대공","시인","선장","학자 + 대공"],"orn":["살소토","도람"],"slots":{"3":[52,53],"4":[33],"5":[12],"6":[54]},"subs":[52,53,33],"t":[["atk",3400,"min"]],"notes":["* 어그로 보존 캐릭터와 조합 금지\r · ¹⁾ 물리구체 기준\r · ²⁾ 시인셋 기준"],"cr":80,"cd":120,"lc":"해 질 무렵 시작되는 춤"}]},{"n":"루카","builds":[{"label":"단일 딜러","trace":[6,10,10,10],"cav":["시계공 + 괴도"],"orn":["탈리아"],"slots":{"3":[56],"4":[51],"5":[12],"6":[59]},"subs":[59,51,56],"t":[["be",200,"min"],["ehr",66.7,"min"],["spd",145,"min"]],"notes":[],"lc":"고독의 치유"}]},{"n":"아젠티","builds":[{"label":"광역 딜러","trace":[1,10,10,10],"cav":["학자","선장"],"orn":["츠가냐","살소토"],"slots":{"3":[52,53],"4":[51,33],"5":[12],"6":[33]},"subs":[52,53,51,33],"t":[["atk",3600,"min"]],"notes":["승격 치확 25%"],"cr":75,"cd":150,"lc":"눈에 담긴 순간"},{"label":"필살기 발사대","trace":[6,10,10,10],"cav":["매"],"orn":["루샤카"],"slots":{"3":["*"],"4":[51],"5":["*"],"6":[54]},"subs":[51],"t":[["spd",166.7,"min"]],"notes":[],"lc":"영험한 열쇠"}]},{"n":"한아","builds":[{"label":"서포터","trace":[1,10,1,10],"cav":["메신저","사제"],"orn":["바커공","루샤카"],"slots":{"3":[32],"4":[51],"5":[32],"6":[54]},"subs":[51,32],"t":[["spd",160,"min"]],"notes":[],"lc":"댄스! 댄스! 댄스!"}]},{"n":"로빈","builds":[{"label":"서포터","trace":[1,10,10,10],"cav":["공격력 2+2","선장"],"orn":["루샤카","바커공"],"slots":{"3":[33],"4":[33,51],"5":[33],"6":[54,33]},"subs":[33,51],"t":[["atk",4500,"min"],["spd",117,"min"]],"notes":["¹⁾ 히아킨, 곽향 등 \r · 선턴으로 아군 대상 스킬 2회 발동 가능 캐릭터와 조합\r · ²⁾ 1돌 이하 오토로 돌릴 경우. 딜러 속도 134 기준\r · ³⁾ 바커공 기준"],"lc":"찬란하게 빛나는 밤"}]},{"n":"부트힐","builds":[{"label":"단일 딜러","trace":[1,10,10,10],"cav":["철기군","매"],"orn":["연마궁","탈리아"],"slots":{"3":["*"],"4":[51],"5":["*"],"6":[59]},"subs":[51,59],"t":[["spd",167.1,"min"]],"notes":["¹⁾ 달리아 필수\r · ²⁾ 3서폿 사용 시 체퍼, 방퍼도 고려\r · ³⁾ 전광 + 달리아 1라 3행동 속도컷"],"lc":"두번째 생명을 향해"}]},{"n":"운리","builds":[{"label":"확산 딜러","trace":[1,10,10,10],"cav":["선장","용맹","학자 + 대공"],"orn":["도람","살소토"],"slots":{"3":[52],"4":[33],"5":[12,33],"6":[54]},"subs":[52,53,33],"t":[["atk",2900,"min"]],"notes":["¹⁾ 치확 100% 최우선으로 세팅"],"cr":100,"cd":120,"lc":"해 질 무렵 시작되는 춤"}]},{"n":"파이논","builds":[{"label":"광역 딜러","trace":[6,10,10,10],"cav":["아집","선장"],"orn":["낙원","뭇별"],"slots":{"3":[52,53],"4":[33],"5":[12,33],"6":[33]},"subs":[52,53,33],"t":[["atk",3000,"min"]],"notes":["¹⁾ 아집셋 기준\r · ²⁾ 물리구체 기준. 공구체는 + 500\r · ³⁾ 치확 세팅 시 고려사항\r · 선데이 20% / 스파클전광 10% / 키레네 16%"],"cr":100,"cd":140,"lc":"이와 같이 타오르는 여명"}]},{"n":"히실렌스","builds":[{"label":"지속 딜러","trace":[1,10,10,10],"cav":["죄수"],"orn":["일각"],"slots":{"3":[56],"4":[51,33],"5":[12,33],"6":[54,33]},"subs":[33,51,56],"t":[["ehr",120,"min"],["atk",2400,"min"]],"notes":["¹⁾ 전투 내 공격력 3600 + (중요)\r · ²⁾ 히실 전광옵 받은 카프카보다 빠르게\r · ³⁾ 전광 기준. 없으면 133.4 +"],"lc":"바다는 왜 노래하는가"}]},{"n":"단항•등황","builds":[{"label":"탱커","trace":[1,10,10,10],"cav":["은둔자","사제"],"orn":["루샤카","도시"],"slots":{"3":[33],"4":[51,33],"5":[33],"6":[54,33]},"subs":[51,33],"t":[["spd",133.4,"min"],["atk",4000,"min"]],"notes":["¹⁾ 파이논 파티 기준\r · ²⁾ 전광 + 공속공에 기준. 공훈광추는 2700"],"lc":"끝없는 산과 강을 거치더라도"},{"label":"지속딜 탱커","trace":null,"cav":["은둔자","공 2+2"],"orn":["루샤카"],"slots":{"3":[33,56],"4":[51],"5":[33],"6":[54]},"subs":[51,33,56],"t":[["spd",155,"min"],["ehr",75,"min"]],"notes":["³⁾ 카프카 사용 기준"],"lc":"끝없는 산과 강을 거치더라도"}]},{"n":"효광","builds":[{"label":"환락 서포터","trace":[1,10,10,10],"cav":["점술가","매"],"orn":["루샤카","바커공","용골","연마궁","거목"],"slots":{"3":[52],"4":[51],"5":["*"],"6":[54]},"subs":[51,52],"t":[["spd",200,"min"]],"notes":["효광 전광 치확10, 점술가 치확 18\r · 2돌 시 속도 -12\r · 속도 200 우선"],"cr":100,"lc":"그녀가 보기로 결심했을 때"}]},{"n":"에바네시아","builds":[{"label":"환락 딜러","trace":[1,10,10,10],"cav":["마법소녀"],"orn":["펑크 로드","이즈모"],"slots":{"3":[53,52],"4":[33,51],"5":[12,32,33],"6":[54]},"subs":[52,53,51],"t":[],"notes":["효광 전광 치확10\r · 속신일 경우 아하타임 속도보다 높게 세팅\r · (효광200, 매커공환척157 기준 에바 속도143)"],"cr":70,"cd":240,"lc":"다음 꽃피는 계절의 만남"}]},{"n":"후크","builds":[{"label":"확산 딜러","trace":[6,10,10,10],"cav":["선구자","학자"],"orn":["뭇별","살소토"],"slots":{"3":[52],"4":[51,33],"5":[14],"6":[54,33]},"subs":[52,53,33,51],"t":[["atk",3000,"min"]],"notes":[],"cr":80,"cd":110,"lc":"대체할 수 없는 것"}]},{"n":"개척자•보존","builds":[{"label":"탱커","trace":[1,10,10,1],"cav":["은둔자"],"orn":["루샤카","용골","벨로보그"],"slots":{"3":[34,56],"4":[51],"5":[34],"6":[34]},"subs":[34,51,56,32],"t":[["def",4000,"min"]],"notes":["¹⁾ 벨로보그 장신구 착용 시"],"lc":"언제나 여정이 평탄하기를"}]},{"n":"아스타","builds":[{"label":"서포터","trace":[1,10,1,10],"cav":["메신저"],"orn":["바커공","루샤카"],"slots":{"3":[32,34],"4":[51],"5":[32,34],"6":[54]},"subs":[51],"t":[["spd",160,"min"]],"notes":["¹⁾ 키레네, 은랑 lv.999 등 속도 기반 캐릭터 서포터로 사용"],"lc":"댄스! 댄스! 댄스!"}]},{"n":"히메코","builds":[{"label":"광역 딜러","trace":[1,10,10,10],"cav":["대공"],"orn":["도시","살소토","이즈모"],"slots":{"3":[52,53],"4":[33,51],"5":[14],"6":[33,54]},"subs":[52,53,33],"t":[["atk",3300,"min"]],"notes":["¹⁾ 공신, 화염구체, 공매듭 기준\r · ²⁾ 행적 치확 15%, 이즈모 치확 12%\r · ³⁾ 전투 내 격특 250% 목표"],"cr":85,"cd":110,"lc":"은하철도의 밤"},{"label":"광역 딜러","trace":null,"cav":["철기군"],"orn":["연마궁"],"slots":{"3":["*"],"4":[51],"5":["*"],"6":[59]},"subs":[59,51],"t":[["spd",133.4,"min"],["be",200,"min"]],"notes":[],"lc":"조화가 침묵한 후"}]},{"n":"토파즈&복순이","builds":[{"label":"단일 딜러 디버퍼","trace":[6,10,10,10],"cav":["대공","선구자"],"orn":["나나 낙원","도람","이즈모","도시"],"slots":{"3":[53,52],"4":[51,33],"5":[14,33],"6":[33]},"subs":[52,53,33,51],"t":[["spd",133.4,"min"],["atk",2500,"min"]],"notes":["¹⁾ 속신, 화염구체, 공매듭 기준"],"cr":100,"cd":130,"lc":"고민, 그리고 행복"}]},{"n":"계네빈","builds":[{"label":"지속 딜러","trace":[6,10,10,10],"cav":["죄수"],"orn":["일각","그라모스"],"slots":{"3":[33,56],"4":[51],"5":[14,33],"6":[33]},"subs":[33,51,56],"t":[["atk",3000,"min"],["spd",160,"min"],["ehr",66.7,"min"]],"notes":["¹⁾ 1돌 이상 시 42.9%"],"lc":"사냥감의 시선"}]},{"n":"갤러거","builds":[{"label":"힐러","trace":[6,10,10,1],"cav":["괴도","철기군","여전사"],"orn":["연마궁","탈리아","루샤카"],"slots":{"3":[55],"4":[51],"5":[32],"6":[54,59]},"subs":[59,51,32],"t":[["spd",145,"min"],["be",150,"min"]],"notes":["¹⁾ 격특 150% 이후로는 힐량에 영향을 주는 스탯이 없음"],"lc":"등가교환"}]},{"n":"반디","builds":[{"label":"확산 딜러","trace":[1,10,10,10],"cav":["철기군"],"orn":["연마궁"],"slots":{"3":[33],"4":[51,33],"5":[33],"6":[59]},"subs":[51,59,33],"t":[["atk",2200,"min"],["be",200,"min"]],"notes":["¹⁾ 달리아 조합에서 궁 종료 후 즉시 재변신 가능한 최대 속도컷 178.0\r · 망귀인 2돌옵, 댄댄은 별도 계산 필요\r · ²⁾ 파이논 전광 착용 시 최대 177.4로 줄어듬\r ·  ³⁾ 전투 내 격특 250% 목표"],"lc":"꿈은 어디로 돌아가야 하는가"}]},{"n":"초구","builds":[{"label":"디버퍼","trace":[1,10,1,10],"cav":["속도 2+2","매"],"orn":["루샤카","바커공"],"slots":{"3":[56],"4":[51],"5":[32],"6":[54]},"subs":[51,56],"t":[["spd",166.7,"min"],["ehr",177.8,"min"]],"notes":["¹⁾ 매셋 기준\r · ²⁾ 아케론 조합 기준. 다른 조합 사용시 66.7%"],"lc":"그 무수한 봄날"}]},{"n":"영사","builds":[{"label":"힐러","trace":[1,10,10,10],"cav":["철기군","매"],"orn":["연마궁","루샤카","바커공"],"slots":{"3":[55,33],"4":[51],"5":[33],"6":[54,59]},"subs":[59,51,33],"t":[["spd",160,"min"],["be",200,"min"]],"notes":["¹⁾ 적 다수 환경에서 필살기 가동률 올리는 빌드\r · ²⁾ 전투 중 수치"],"lc":"오직 향만이 변함없이"}]},{"n":"망귀인","builds":[{"label":"서포터","trace":[1,10,10,1],"cav":["격특 2+2","격2+속2","괴도","매"],"orn":["바커공","사물 수용소","연마궁"],"slots":{"3":[56],"4":[51],"5":["*"],"6":[59,54]},"subs":[51,56,59],"t":[["spd",160,"min"],["ehr",66.7,"min"],["be",220,"min"]],"notes":["¹⁾ 중복 적용 x\r · ²⁾ 2돌 권장. 괴도셋은 허구 한정\r · ³⁾ 전투 중 수치"],"lc":"먼 길 끝의 귀로"}]},{"n":"달리아","builds":[{"label":"서포터","trace":[1,10,1,10],"cav":["철기군","속 2+2","매"],"orn":["사물 수용소","연마궁","바커공"],"slots":{"3":["*",56],"4":[51],"5":["*"],"6":[54,59]},"subs":[51,59],"t":[["spd",160,"min"],["be",150,"min"]],"notes":["¹⁾ 중복 적용 x. 땀방울 착용 시 효명 66.7% 목표\r · ²⁾ 2돌 이상일 경우 고려 가능"],"lc":"그녀의 불꽃을 잊지 말라"}]},{"n":"스파키","builds":[{"label":"환락 딜러","trace":[6,10,10,10],"cav":["마법소녀"],"orn":["텐고쿠","이즈모"],"slots":{"3":[52],"4":[51,33],"5":[33],"6":[33,54]},"subs":[52,33,53,51],"t":[["atk",3600,"min"]],"notes":["효광 전광 치확10\r · 2돌 미만 아하타임 속도보다 높게 세팅"],"cr":100,"cd":140,"lc":"눈부신 파키의 세상"}]},{"n":"천야•블레이드","builds":[{"label":"서브딜러","trace":[1,10,10,10],"cav":["명장"],"orn":["습골지","바커공"],"slots":{"3":[52],"4":[51,32],"5":[14,32],"6":[54]},"subs":[52,53,32,51],"t":[["spd",141,"min"],["hp",6000,"min"]],"notes":["전광보다 2돌까지 돌파 우선\r · 사이퍼 전광 사용 시 속도 170 +"],"cr":80,"cd":120,"lc":"연옥을 불사른 새로운 몸"},{"label":"서포터","trace":null,"cav":["매","철위대"],"orn":["바커공"],"slots":{"3":[],"4":[51],"5":[32],"6":[]},"subs":[],"t":[["spd",168,"min"]],"notes":[],"cr":80,"lc":"연옥을 불사른 새로운 몸"}]},{"n":"히메코•노바","builds":[{"label":"판결","trace":[1,10,10,10],"cav":["아집","학자"],"orn":["출항지","나나 낙원"],"slots":{"3":[52],"4":[33,51],"5":[33,14],"6":[33,54]},"subs":[52,33,53,51],"t":[["atk",3500,"min"]],"notes":["선데이 치확 20"],"cr":100,"lc":"별이 밤하늘을 밝힐 때"}]},{"n":"브로냐","builds":[{"label":"서포터","trace":[1,1,10,10],"cav":["사제","매"],"orn":["루샤카","바커공"],"slots":{"3":[53],"4":[51],"5":[32,34],"6":[54]},"subs":[51,53],"t":[["spd",133.3,"min"]],"notes":["¹⁾ 딜러 속도보다 느리게"],"cd":200,"lc":"아직 전투는 끝나지 않았다"}]},{"n":"삼포","builds":[{"label":"지속 딜러","trace":[1,10,10,10],"cav":["죄수"],"orn":["일각"],"slots":{"3":[33,56],"4":[51,33],"5":[20],"6":[33,54]},"subs":[56,33],"t":[["atk",2500,"min"],["spd",133.4,"min"],["ehr",66.7,"min"]],"notes":[],"lc":"밤 인사와 잠든 얼굴"}]},{"n":"단항","builds":[{"label":"단일 딜러","trace":[6,10,10,10],"cav":["매","학자"],"orn":["정거장","살소토"],"slots":{"3":[52,53],"4":[51,33],"5":[20],"6":[33]},"subs":[52,53,51,33],"t":[["atk",2400,"min"]],"notes":["* 단일 버프형 화합과 조합"],"cr":80,"cd":120,"lc":"야경 속에서"}]},{"n":"블레이드","builds":[{"label":"확산 딜러","trace":[6,10,10,10],"cav":["제자"],"orn":["습골지","뭇별"],"slots":{"3":[53,52],"4":[51,32],"5":[20,32],"6":[32]},"subs":[52,53,32,51],"t":[["hp",7000,"min"],["spd",133.4,"min"]],"notes":["* 도발 및 실드 캐릭터와 조합 금지\r · ¹⁾ 선데이, 브로냐보다 속도 빠르게\r · ²⁾ 선데이 사용 기준. 2돌일 경우 65%"],"cr":80,"cd":140,"lc":"닿을 수 없는 저편"}]},{"n":"곽향","builds":[{"label":"힐러","trace":[1,10,10,10],"cav":["여전사","과객"],"orn":["거목","바커공","루샤카"],"slots":{"3":[55],"4":[51],"5":[32],"6":[54]},"subs":[57,32,51],"t":[["hp",6000,"min"],["spd",160,"min"]],"notes":[],"lc":"섬뜩한 밤"}]},{"n":"블랙스완","builds":[{"label":"지속 딜러","trace":[6,10,10,10],"cav":["죄수"],"orn":["일각"],"slots":{"3":[56,33],"4":[51,33],"5":[20,33],"6":[33]},"subs":[56,33,51],"t":[["spd",133.4,"min"],["ehr",156.5,"min"],["atk",2400,"min"]],"notes":["¹⁾ 효명 최소 120%\r · ²⁾ 전투 내 공격력 3600 + (중요)"],"lc":"시간의 기억에 대한 재구성"}]},{"n":"비소","builds":[{"label":"단일 딜러","trace":[1,10,10,10],"cav":["매","용맹"],"orn":["도람","살소토"],"slots":{"3":[52,53],"4":[33,51],"5":[20,33],"6":[33]},"subs":[52,53,33,51],"t":[["atk",3000,"min"],["spd",133.4,"min"]],"notes":["¹⁾ 공신, 바람구체 기준\r · ²⁾ 용맹셋 기준. 매셋은 속도 중요도 낮음"],"cr":100,"cd":120,"lc":"정복하고 사냥하리"}]},{"n":"아낙사","builds":[{"label":"바운스 딜러","trace":[6,10,10,10],"cav":["천재","선장","아집","학자"],"orn":["뭇별"],"slots":{"3":[52,53],"4":[33],"5":[33,20],"6":[33,54]},"subs":[52,53,33],"t":[["spd",133.4,"min"]],"notes":["¹⁾ 케리드라 기용 시 - 20, 키레네 기용 시  속도 불필요\r · ²⁾ 선데이 20%, 이즈모 12%"],"cr":100,"lc":"생명은 불태워야 하는 것"},{"label":"서브 딜러","trace":null,"cav":["매"],"orn":["이즈모","바커공"],"slots":{"3":[],"4":[51],"5":[],"6":[]},"subs":[52,53,51,33],"t":[["spd",166.7,"min"]],"notes":[]}]},{"n":"히아킨","builds":[{"label":"힐러 서브딜러","trace":[1,10,10,10],"cav":["여전사","구세주"],"orn":["거목","앰포리어스"],"slots":{"3":[55],"4":[51],"5":[32],"6":[54]},"subs":[51,32,53],"t":[["hp",5000,"min"],["spd",200,"min"]],"notes":["¹⁾ 은랑 LV.999 등 속도가 중요한 딜러와 조합 시\r · ²⁾ 여전사셋 착용 시 193.4 이상\r ·  ³⁾ 속도 부옵이 최우선"],"cd":80,"lc":"무지개가 영원히 하늘에 머물길"}]},{"n":"세이버","builds":[{"label":"광역 딜러","trace":[6,10,10,10],"cav":["학자"],"orn":["생명과학연구원","살소토"],"slots":{"3":[53,52],"4":[51,33],"5":[20,33],"6":[33]},"subs":[52,53,33,51],"t":[["atk",2200,"min"],["spd",134,"min"]],"notes":["특성 치확 20%"],"cr":80,"cd":160,"lc":"보답 없는 왕관"}]},{"n":"케리드라","builds":[{"label":"서포터","trace":[1,10,10,1],"cav":["사제","속도 2+2"],"orn":["루샤카"],"slots":{"3":[33],"4":[33,51],"5":[33],"6":[33,54]},"subs":[33,51,53],"t":[["spd",113.4,"min"],["atk",4000,"min"]],"notes":["¹⁾ 파이논 조합 기준\r · ²⁾ 추가능력 치피 전환 상한 4000"],"lc":"황금 피가 새긴 시대"}]},{"n":"로빈•서머레토","builds":[{"label":"서포터","trace":[1,10,1,10],"cav":["구세주"],"orn":["앰포리어스","바커공"],"slots":{"3":[32],"4":[32,51],"5":[32],"6":[32,54]},"subs":[51,32,52,53,33],"t":[["hp",8000,"min"]],"notes":["세길, 뉴네추, 노메코, 파이논 등\r · 필살기를 한번 더 사용가능 할 경우 에충매듭"],"cr":50,"lc":"그대는 나아가 노래하리니"},{"label":"서포터","trace":null,"cav":[],"orn":[],"slots":{"3":[32,33],"4":[51],"5":[32],"6":[54]},"subs":[],"t":[["hp",6500,"min"],["spd",160,"min"]],"notes":["기억, 환락 딜러 등\r · 로빈의 공격력이 딜러보다 높도록 세팅"]}]},{"n":"웰트","builds":[{"label":"디버퍼","trace":[1,10,10,10],"cav":["매"],"orn":["바커공","루샤카"],"slots":{"3":[56],"4":[51],"5":["*"],"6":[54]},"subs":[51,56],"t":[["spd",166.7,"min"],["ehr",66.7,"min"]],"notes":["¹⁾ 딜러로 사용 시 80%\r · ²⁾ 선데이 20%, 이즈모 12%, 6돌 30%"],"lc":"초보자 임무 시작 전"},{"label":"바운스 딜러","trace":null,"cav":["선구자"],"orn":["뭇별"],"slots":{"3":[52,53],"4":[51],"5":[33,24],"6":[54]},"subs":[52,53,51,33,56],"t":[["atk",2500,"min"],["spd",133.4,"min"]],"notes":[],"cr":100,"cd":100,"lc":"흘러가는 강가를 따라"}]},{"n":"어공","builds":[{"label":"서포터","trace":[1,1,10,10],"cav":["철위대","철위대 + 메신저","과객"],"orn":["용골","페나코니","바커공","루샤카"],"slots":{"3":[32,52],"4":[51,32,33],"5":[32,24],"6":[54]},"subs":[51,33,52,53,32,57],"t":[],"notes":["딜러 속도 +1"],"lc":"아직 전투는 끝나지 않았다"}]},{"n":"나찰","builds":[{"label":"힐러","trace":[1,10,10,1],"cav":["여전사","과객","속도 2+2"],"orn":["거목","루샤카"],"slots":{"3":[55],"4":[51],"5":[33,32],"6":[54]},"subs":[51,33,32],"t":[["spd",135,"min"]],"notes":["¹⁾ 거목셋 속도 최소 135. 목표 160 이상"],"lc":"관의 울림"}]},{"n":"음월","builds":[{"label":"확산 딜러","trace":[6,10,10,10],"cav":["이단","거너"],"orn":["텐고쿠","뭇별","살소토"],"slots":{"3":[53,52],"4":[33,51],"5":[24,33],"6":[33,54]},"subs":[52,53,33],"t":[["atk",3300,"min"]],"notes":["¹⁾ 선데이 20%, 스파클전광 10%"],"cr":100,"cd":130,"lc":"태양보다 밝게 빛나는 것"}]},{"n":"레이시오","builds":[{"label":"단일 딜러","trace":[1,10,10,10],"cav":["선구자","대공 + 학자"],"orn":["도람","살소토","이즈모"],"slots":{"3":[53,52],"4":[33,51],"5":[24,33],"6":[33,54]},"subs":[52,53,51,33],"t":[["atk",3500,"min"]],"notes":["¹⁾ 귀납 치확 최대 12.5, 치피 30"],"cr":87.5,"cd":130,"lc":"순수 사유의 세례"}]},{"n":"어벤츄린","builds":[{"label":"탱커","trace":[1,10,10,10],"cav":["은둔자"],"orn":["루샤카","용골"],"slots":{"3":[34],"4":[51,34],"5":[34],"6":[34,54]},"subs":[34,51],"t":[["def",4500,"min"],["spd",133.4,"min"]],"notes":[],"lc":"언제나 불공평한 운명"}]},{"n":"개척자•화합","builds":[{"label":"서포터","trace":[1,10,1,10],"cav":["시계공","괴도","메신저","매"],"orn":["바커공","탈리아","연마궁","루샤카"],"slots":{"3":["*"],"4":[51],"5":["*"],"6":[59]},"subs":[59,51],"t":[["spd",145,"min"]],"notes":["¹⁾ 탈리아셋 기준"],"lc":"댄스! 댄스! 댄스!"}]},{"n":"Mar.7•수렵","builds":[{"label":"서포터","trace":[6,10,10,10],"cav":["매","사제"],"orn":["도시","바커공"],"slots":{"3":[52],"4":[51],"5":[24,33],"6":[54]},"subs":[52,53,33,51],"t":[["spd",160,"min"]],"notes":[],"cr":80,"cd":120,"lc":"별 바다 순항"},{"label":"격파 딜러","trace":null,"cav":["철기군"],"orn":["연마궁"],"slots":{"3":["*"],"4":[51],"5":["*"],"6":[59,54]},"subs":[51,59],"t":[["spd",168,"min"]],"notes":["달리아 필수\r · 삼달척완 쌀먹조합용"],"lc":"두번째 생명을 향해"}]},{"n":"라파","builds":[{"label":"광역 딜러","trace":[1,10,1,10],"cav":["철기군"],"orn":["연마궁","탈리아"],"slots":{"3":[33],"4":[51],"5":[33],"6":[59,54]},"subs":[51,33,59],"t":[["atk",2800,"min"],["spd",168,"min"]],"notes":["¹⁾ 전광 기준"],"lc":"인법첩•요란 파마"}]},{"n":"선데이","builds":[{"label":"서포터","trace":[1,10,10,10],"cav":["사제","매"],"orn":["루샤카","용골","바커공"],"slots":{"3":[53],"4":[51],"5":["*"],"6":[54]},"subs":[51,53],"t":[["spd",133.4,"min"]],"notes":["¹⁾ 딜러보다 느리게"],"cd":200,"lc":"대지로 돌아온 비행"}]},{"n":"마이데이","builds":[{"label":"확산 딜러 광역 딜러","trace":[1,10,10,10],"cav":["학자","제자"],"orn":["습골지","뭇별"],"slots":{"3":[32,53],"4":[32,51],"5":[24,32],"6":[32]},"subs":[52,32,51,53],"t":[["hp",8000,"min"],["spd",133.4,"min"]],"notes":["¹⁾ HP 최소컷 8000\r · ²⁾ 키레네 조합 시 우선도 낮음\r · ³⁾ 제자 16%, 선데이 20%"],"cr":52,"cd":150,"lc":"피의 불꽃이여, 앞길을 태워라"}]},{"n":"은랑 LV.999","builds":[{"label":"환락 딜러","trace":[6,10,1,10],"cav":["마법소녀"],"orn":["펑크 로드","이즈모"],"slots":{"3":[52,53],"4":[51],"5":[32,34],"6":[]},"subs":[52,51,53],"t":[["spd",200,"min"]],"notes":["속도 최대 260\r · 효광전광 치확 10"],"cr":84,"lc":"갤럭시 시티에 오신 것을 환영합니다"}]}];
+const EXAMPLE_DATE = '2026-11-03';
+const PAIRS = [
+  ['아처','아집 / 천재','아집 4 · 천재 4 · 아집 2+천재 2','공격력 12% + 양자 피해 10%, 둘 다 양자 공격 딜러에게 유효'],
+  ['천야•블레이드','명장 / 매','명장 4 · 매 4 (2+2는 X)','매 2세트는 바람 피해라 화염 캐릭터에게 무의미. 매는 4세트 행동 당김 때문에 쓰는 세트'],
+  ['음월','이단, 거너','이단 4 · 거너 4 · 이단 2+거너 2','치명타 피해 16% + 공격력 12%, 일반 공격 딜러에게 둘 다 유효'],
+  ['파이논','뭇별 / 낙원 (장신구)','둘 중 하나','장신구는 2세트뿐이라 둘 중 하나면 O'],
+  ['천야•블레이드','바커공 / 습골지 (장신구)','둘 중 하나','습골지는 HP 5000 이상 조건, 목표 HP 7000이라 충족'],
+  ['어벤츄린','루샤카 / 도람 (장신구)','둘 중 하나','장신구는 2세트뿐이라 둘 중 하나면 O'],
+];
+const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const K={data:'hsr-jong3:data',hist:'hsr-jong3:history:',fav:'hsr-jong2:fav',jong:'hsr-jong3:sheet-jong',set:'hsr-jong3:sheet-set',urls:'hsr-jong3:urls',mode:'hsr-jong3:mode'};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tier=p=>p==null?'var(--muted)':p>=99.95?'var(--good)':p>=75?'var(--warn)':'var(--bad)';
+const BUILTIN_SRC='내장 (2026-11-03, 4.6V)';
+let state={chars:EXAMPLE,isExample:true,when:EXAMPLE_DATE,jong:JONG,jongSrc:BUILTIN_SRC,setting:SETTING_BUILTIN,setSrc:BUILTIN_SRC,
+  mode:LS.get(K.mode)==='set'?'set':'jong',result:null,deltas:{},filter:'all',sort:'name',fav:new Set(LS.get(K.fav)||[])};
+
+function computeDeltas(scores){
+  const key=K.hist+state.mode, hist=LS.get(key)||[]; const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  let base=null; for(let i=hist.length-1;i>=0;i--){ if(!same(hist[i].scores,scores)){base=hist[i];break} }
+  if(!hist.length||!same(hist[hist.length-1].scores,scores)){hist.push({ts:Date.now(),scores});while(hist.length>20)hist.shift();LS.set(key,hist)}
+  const d={}; if(base) for(const k in scores) if(base.scores[k]!=null&&scores[k]!=null) d[k]=scores[k]-base.scores[k];
+  return {d,baseTs:base?base.ts:null};
+}
+function recompute(){
+  state.result=analyze2(state.chars,state.jong,state.setting,state.mode);
+  if(!state.isExample){const sc={};for(const c of state.result.done)sc[c.name]=c.total==null?null:Math.round(c.total*10)/10;const r=computeDeltas(sc);state.deltas=r.d;state.baseTs=r.baseTs}
+  else{state.deltas={};state.baseTs=null}
+  render();
+}
+function render(){
+  if(typeof favTimer!=='undefined'&&favTimer){clearTimeout(favTimer);favTimer=null}
+  const res=state.result, done=res.done, jm=state.mode==='jong';
+  document.querySelectorAll('[data-m]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===state.mode)));
+  $('src').innerHTML=(state.isExample?'<span class="pill ex">아직 내 데이터가 없어요</span>':'<span class="pill">내 데이터 · '+esc(state.when)+'</span>')
+    +'<span class="pill">세팅 탭 · '+esc(state.setSrc)+'</span><span class="pill">종결 탭 · '+esc(state.jongSrc)+'</span>'
+    +(state.baseTs?'<span class="muted">변화량은 '+esc(new Date(state.baseTs).toLocaleString('ko-KR'))+' 대비</span>':'');
+  $('mode-note').textContent=jm?'종결 탭에 있는 한정 캐릭터를 종결 세트·수치로 봐요. 부위별 주옵과 행적은 세팅 탭 기준이에요. ☆를 누르면 즐겨찾기가 되고 맨 위에 와요.'
+    :'세팅 탭에 있는 모든 캐릭터를 세팅 탭의 세트·주옵·수치로 봐요. ☆를 누르면 즐겨찾기가 되고 맨 위에 와요.';
+  if(state.isExample){
+    $('summary').innerHTML=['평균 수치 달성률','세트·주옵·행적 모두 O',(jm?'종결':'세팅')+' 달성','평균 유효 부옵 명중'].map(l=>'<div class="stat"><span>'+l+'</span><b>—</b></div>').join('');
+    $('grid').innerHTML='<div class="empty">아직 데이터가 없어요. 위의 "내 데이터 넣기"에 HoYoLAB 데이터를 붙여넣으면 여기에 캐릭터별 진척도가 나와요.</div>';
+    $('miss-sec').hidden=true; return;
+  }
+  $('miss-sec').hidden=false;
+  const withT=done.filter(c=>c.total!=null), avg=withT.length?withT.reduce((a,b)=>a+b.total,0)/withT.length:0;
+  const okAll=done.filter(c=>c.allOk).length, full=done.filter(c=>c.complete).length;
+  const hy=done.filter(c=>c.hy), hav=hy.length?hy.reduce((a,b)=>a+b.hy.total,0)/hy.length:0;
+  const ds=Object.values(state.deltas).filter(v=>Math.abs(v)>=0.05);
+  $('summary').innerHTML=[
+    ['평균 수치 달성률',avg.toFixed(1)+'%'],
+    ['세트·주옵·행적 모두 O',okAll+' / '+done.length+'명'],
+    [(jm?'종결':'세팅')+' 달성',full+'명'],
+    ['평균 유효 부옵 명중',hav.toFixed(1)],
+  ].map(([l,v])=>'<div class="stat"><span>'+l+'</span><b>'+v+'</b></div>').join('');
+  let list=done.slice();
+  if(state.filter==='todo')list=list.filter(c=>!c.complete);
+  if(state.filter==='done')list=list.filter(c=>c.complete);
+  const T=c=>c.total==null?-1:c.total;
+  const cmp=state.sort==='high'?(a,b)=>T(b)-T(a):state.sort==='low'?(a,b)=>T(a)-T(b):state.sort==='hits'?(a,b)=>((b.hy||{}).total||0)-((a.hy||{}).total||0):(a,b)=>a.name.localeCompare(b.name,'ko');
+  list.sort((a,b)=>(state.fav.has(b.name)-state.fav.has(a.name))||cmp(a,b)||a.name.localeCompare(b.name,'ko'));
+  $('grid').innerHTML=list.length?list.map(card).join(''):'<div class="empty">'+(state.filter==='done'?'아직 달성한 캐릭터가 없어요.':'해당하는 캐릭터가 없어요.')+'</div>';
+  $('missing').innerHTML=res.missing.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(m=>'<span class="pill">'+esc(m.name)+' <span class="muted">'+esc(m.why)+'</span></span>').join('')||'<span class="muted">없음</span>';
+}
+function recLine(r){
+  const ch=r.changes.map(c=>c[0]+' '+c[1]+' → '+c[2]).join(', ');
+  if(r.kind==='level') return '<li><b>강화 먼저: '+esc(r.slot)+'</b>'+(r.d>=0.05?'<span class="gain">+'+r.d.toFixed(1)+'%p</span>':'')+'<small>주옵만 +15로 올려도 '+esc(ch||'목표 수치 변화 없음')+'</small></li>';
+  const why=[]; if(r.forced) why.push(r.pos===5&&state.mode==='jong'&&r.to?'시트 권장 주옵':'세팅 탭 권장 주옵'); if(r.lostSub>0.05) why.push('지금 '+r.slot+'에 붙은 '+r.lostName+' 부옵은 빠진 값');
+  return '<li><b>'+esc(r.slot)+' 주옵 '+esc(r.from)+' → '+esc(r.to)+'</b>'+(r.d>=0.05?'<span class="gain">+'+r.d.toFixed(1)+'%p</span>':'')+'<small>'+esc([ch,...why].filter(Boolean).join(' · '))+'</small></li>';
+}
+function hitChips(h){return Object.entries(h.by).sort((a,b)=>b[1]-a[1]).map(([t,n])=>'<span>'+esc(SUBN[t]||t)+'<i>'+n+'</i></span>').join('')}
+function card(c){
+  const fav=state.fav.has(c.name), d=state.deltas[c.name];
+  const dl=d!=null&&Math.abs(d)>=0.05?' <span class="delta '+(d>0?'up':'down')+'">'+(d>0?'▲ +':'▼ ')+d.toFixed(1)+'%p</span>':'';
+  const checks=c.checks.map(x=>'<div class="chk"><span class="ox '+(x.ok?'o':'x')+'" aria-label="'+(x.ok?'맞음':'아님')+'">'+(x.ok?'O':'X')+'</span><span class="k">'+esc(x.k)+'</span><span class="v">'+esc(x.cur)+(x.ok?'':' <span class="muted">→ '+esc(x.tgt)+'</span>')+(x.src&&!x.ok?'<span class="srctag">'+esc(x.src)+'</span>':'')+(x.why?'<small>'+esc(x.why)+'</small>':'')+'</span></div>').join('');
+  const items=c.items.map(i=>'<li style="--itier:'+tier(i.p)+'"><span class="k">'+esc(i.k)+'</span><span class="v"><span><span class="mono">'+esc(i.cur)+'</span> <span class="muted">/ '+esc(i.tgt)+'</span></span><span class="bar"><i style="width:'+i.p.toFixed(1)+'%"></i></span></span><span class="p">'+Math.round(i.p)+'</span></li>').join('');
+  const score=c.hy?'<div class="score"><b>'+c.hy.total+'</b><div class="chips">'+hitChips(c.hy)+'</div><small>유효 부옵 명중 · '+(c.hyCustom?'내가 설정한 유효 옵션':'HoYoLAB 추천 옵션')+(c.sh?' · 세팅 탭 기준 '+c.sh.total:'')+'</small></div>':'';
+  const rec=c.rec.length?'<div class="rec"><h4>주옵 추천</h4><ul>'+c.rec.map(recLine).join('')+'</ul></div>':'';
+  const stripe=c.complete?'var(--good)':c.allOk&&(c.total==null||c.total>=75)?'var(--warn)':'var(--bad)';
+  return '<article class="card'+(fav?' fav':'')+'" style="--tier:'+tier(c.total)+';--stripe:'+stripe+'">'
+    +'<div class="card-top"><div class="who"><button type="button" class="starbtn" data-star="'+esc(c.name)+'" aria-pressed="'+fav+'" aria-label="'+esc(c.name)+' 즐겨찾기">'+(fav?'★':'☆')+'</button><h3>'+esc(c.name)+'</h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
+    +'<div class="pctbox"><span class="pct">'+(c.total==null?'—':c.total.toFixed(1)+'<span style="font-size:.55em">%</span>')+'</span><span class="pct-l">'+(c.total==null?'목표 수치 없음':'수치 달성률')+dl+'</span></div>'
+    +(c.total==null?'':'<div class="bar"><i style="width:'+c.total.toFixed(1)+'%"></i></div>')+'</div>'
+    +'<div class="checks">'+checks+'</div>'+(items?'<ul class="items">'+items+'</ul>':'')+score+rec
+    +(c.note?'<p class="note">시트 메모 · '+esc(c.note)+'</p>':'')+'</article>';
+}
+function status(id,msg,kind){const s=$(id);s.textContent=msg;s.className='status '+(kind||'')}
+function ingest(text){
+  let raw;try{raw=JSON.parse(text.trim())}catch(e){status('status','JSON으로 읽을 수 없어요. Network 탭에서 Copy response로 복사했는지 확인해 주세요.','err');return}
+  if(raw&&raw.retcode!=null&&raw.retcode!==0){status('status','HoYoLAB 응답이 오류예요 (retcode '+raw.retcode+'). 페이지를 새로고침한 뒤 다시 복사해 주세요.','err');return}
+  let chars;try{chars=compact(raw).filter(c=>c.rel.length||c.orn.length||true)}catch(e){status('status','캐릭터 목록이 없는 응답이에요. info?server=… 요청의 응답을 복사해 주세요.','err');return}
+  const when=new Date().toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  LS.set(K.data,{chars,when});
+  Object.assign(state,{chars,isExample:false,when}); recompute();
+  status('status','캐릭터 '+chars.length+'명을 읽었어요. 지금 기준으로 '+state.result.done.length+'명을 계산했어요.','ok');
+  $('paste').value='';
+}
+const stamp=()=>new Date().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+function useSheet(kind,rows,how){
+  try{
+    if(kind==='jong'){const j=parseJongRows(rows);state.jong=j;state.jongSrc=j.length+'명 · '+how+' '+stamp();LS.set(K.jong,{data:j,src:state.jongSrc});status('sheet-status','종결 탭에서 캐릭터 '+j.length+'명을 읽었어요.','ok')}
+    else{const s=parseSettingRows(rows);state.setting=s;state.setSrc=s.length+'명 · '+how+' '+stamp();LS.set(K.set,{data:s,src:state.setSrc});status('sheet-status','세팅 탭에서 캐릭터 '+s.length+'명('+s.reduce((a,b)=>a+b.builds.length,0)+'개 빌드)을 읽었어요.','ok')}
+    recompute(); return true;
+  }catch(e){status('sheet-status',(kind==='jong'?'종결':'세팅')+' 탭으로 읽지 못했어요: '+e.message+'. 탭 전체를 복사했는지, 맞는 칸에 넣었는지 확인해 주세요.','err');return false}
+}
+async function fetchSheet(kind,url){
+  const u=sheetCsvUrl(url); if(!u) throw new Error('주소');
+  const r=await fetch(u,{method:'GET',credentials:'omit',cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status);
+  return parseDelimited(await r.text(),',');
+}
+function saveUrls(){LS.set(K.urls,{set:$('url-set').value,jong:$('url-jong').value,good:$('url-good').value});goodLink()}
+function goodLink(){const v=$('url-good').value.trim();$('good-link').innerHTML=/^https:\/\/docs\.google\.com\/spreadsheets\//.test(v)?'<a href="'+esc(v)+'" target="_blank" rel="noopener">이정도면 잘 키웠다 시트 열기</a>':(v?'<span class="muted">구글 스프레드시트 주소가 아니에요</span>':'')}
+$('sheet-load').addEventListener('click',async()=>{
+  saveUrls(); status('sheet-status','불러오는 중…'); let ok=0;
+  for (const [kind,id] of [['set','url-set'],['jong','url-jong']]){ try{ if(useSheet(kind,await fetchSheet(kind,$(id).value),'불러옴')) ok++; }catch(e){} }
+  if(ok<2){ $('sheet-paste-box').open=true; status('sheet-status','이 페이지에서는 시트에 직접 접속할 수 없어요. 아래 방법대로 탭을 복사해 붙여넣어 주세요.','err'); }
+});
+for (const kind of ['set','jong']){
+  $('paste-'+kind).addEventListener('paste',e=>{const t=(e.clipboardData||window.clipboardData).getData('text');if(t&&t.trim()){e.preventDefault();if(useSheet(kind,parseDelimited(t,'\t'),'붙여넣음'))$('paste-'+kind).value=''}});
+  $('file-'+kind).addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const t=String(r.result);useSheet(kind,parseDelimited(t,t.split('\n')[0].includes('\t')||t.includes('\t')?'\t':','),'파일')};r.readAsText(f);e.target.value=''});
+}
+$('sheet-builtin').addEventListener('click',()=>{LS.del(K.jong);LS.del(K.set);Object.assign(state,{jong:JONG,jongSrc:BUILTIN_SRC,setting:SETTING_BUILTIN,setSrc:BUILTIN_SRC});recompute();status('sheet-status','내장 기준으로 되돌렸어요.','ok')});
+['url-set','url-jong','url-good'].forEach(id=>$(id).addEventListener('change',saveUrls));
+$('url-good').addEventListener('input',goodLink);
+$('run').addEventListener('click',()=>{const t=$('paste').value;if(!t.trim()){status('status','먼저 붙여넣기 칸에 데이터를 넣어 주세요.','err');return}ingest(t)});
+$('paste').addEventListener('paste',e=>{const t=(e.clipboardData||window.clipboardData).getData('text');if(t&&t.trim().startsWith('{')){e.preventDefault();ingest(t)}});
+$('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>ingest(String(r.result));r.readAsText(f);e.target.value=''});
+$('reset').addEventListener('click',()=>{LS.del(K.data);LS.del(K.hist+'jong');LS.del(K.hist+'set');Object.assign(state,{chars:EXAMPLE,isExample:true,when:EXAMPLE_DATE});recompute();status('status','저장된 내 데이터와 기록을 지웠어요. 처음 상태로 돌아왔어요.','ok')});
+// 즐겨찾기: 별은 바로 바뀌고, 순서는 마지막으로 누른 뒤 3초 후에 반영
+let favTimer=null;
+$('grid').addEventListener('click',e=>{
+  const b=e.target.closest('[data-star]');if(!b)return;
+  const n=b.dataset.star, on=!state.fav.has(n);
+  on?state.fav.add(n):state.fav.delete(n); LS.set(K.fav,[...state.fav]);
+  b.textContent=on?'★':'☆'; b.setAttribute('aria-pressed',String(on));
+  const card=b.closest('.card'); if(card) card.classList.toggle('fav',on);
+  clearTimeout(favTimer); favTimer=setTimeout(()=>{favTimer=null;render()},3000);
+});
+document.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('click',()=>{state.mode=b.dataset.m;LS.set(K.mode,state.mode);recompute()}));
+document.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',()=>{state.filter=b.dataset.f;document.querySelectorAll('[data-f]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render()}));
+$('sort').addEventListener('change',e=>{state.sort=e.target.value;render()});
+$('pairs').innerHTML=PAIRS.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('');
+const used=new Set();for(const r of JONG){for(const n of r.cav.concat(r.orn))if(n!=='*')used.add(norm(n))}for(const s of SETTING_BUILTIN)for(const b of s.builds)for(const n of b.cav.concat(b.orn))used.add(norm(n));
+$('sets').innerHTML=Object.entries(SETS).filter(([,v])=>v[1].some(n=>used.has(norm(n)))).map(([id,v])=>'<tr><td>'+esc(v[1].join(', '))+'</td><td>'+esc(v[0])+'</td><td>'+esc(v[2])+'</td><td>'+esc(v[3]||'—')+'</td></tr>').join('');
+const urls=LS.get(K.urls);if(urls){for(const k of ['set','jong','good'])if(urls[k])$('url-'+k).value=urls[k]}goodLink();
+const sj=LS.get(K.jong);if(sj&&Array.isArray(sj.data)){state.jong=sj.data;state.jongSrc=sj.src}
+const ss=LS.get(K.set);if(ss&&Array.isArray(ss.data)){state.setting=ss.data;state.setSrc=ss.src}
+const saved=LS.get(K.data);if(saved&&Array.isArray(saved.chars)&&saved.chars[0]&&saved.chars[0].v===3)Object.assign(state,{chars:saved.chars,isExample:false,when:saved.when});
+recompute();
+</script>
+
+</body>
+</html>

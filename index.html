@@ -133,6 +133,19 @@ tr:last-child td{border-bottom:0}
 .sheetpaste{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
 @media (max-width:560px){.sheetpaste{grid-template-columns:minmax(0,1fr)}}
 .sheetpaste>div{display:grid;gap:4px;font-size:.8rem;color:var(--muted)}
+.subrank{margin:0 12px 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);display:grid;gap:8px}
+.subrank h4{margin:0;font-size:.78rem;letter-spacing:.06em;color:var(--accent);font-weight:600}
+.subrank ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.subrank li{display:grid;grid-template-columns:1.4em minmax(0,1fr) auto;gap:2px 8px;align-items:baseline;font-size:.84rem}
+.subrank .rk{font-family:var(--mono);color:var(--muted);font-size:.78rem}
+.subrank .u{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}
+.subrank small{grid-column:2/-1;color:var(--muted);font-size:.76rem;overflow-wrap:anywhere}
+.subrank .tag{font-size:.68rem;border-radius:4px;padding:0 4px;margin-left:4px;background:var(--bad-soft);color:var(--bad);white-space:nowrap}
+.subrank .tag.lv{background:var(--gold-soft);color:var(--gold)}
+.subrank h5{margin:2px 0 0;font-size:.76rem;font-weight:600;color:var(--muted)}
+.subrank details summary{cursor:pointer;font-size:.78rem;color:var(--accent)}
+.subrank details ol{margin-top:8px}
+.subrank p{margin:0;font-size:.74rem;color:var(--muted)}
 .mode-note{margin:0;font-size:.82rem;color:var(--muted);max-width:80ch}
 
 </style>
@@ -216,8 +229,8 @@ tr:last-child td{border-bottom:0}
       <h2 id="list-h">캐릭터별 진척도</h2>
       <div class="row">
         <div class="seg" role="group" aria-label="기준">
-          <button type="button" data-m="jong" aria-pressed="true" id="m-jong">종결 기준</button>
-          <button type="button" data-m="set" aria-pressed="false" id="m-set">세팅 기준</button>
+          <button type="button" data-m="set" aria-pressed="true" id="m-set">세팅 기준</button>
+          <button type="button" data-m="jong" aria-pressed="false" id="m-jong">종결 기준</button>
         </div>
         <div class="seg" role="group" aria-label="보기">
           <button type="button" data-f="all" aria-pressed="true" id="f-all">전체</button>
@@ -833,9 +846,24 @@ function analyze2(chars, jong, setting, mode){
     const sh=sb&&sb.subs.length?hits(c,sb.subs):null;
     done.push({name:n,rank:c.r,total,items,checks,allOk,complete:allOk&&(total==null||total>=99.95),note,
       build:sb&&sc.builds.length>1?sb.label:'',hy,hyCustom:c.rec?c.rec.custom:false,hyList:c.rec?c.rec.list:[],sh,shList:sb?sb.subs:[],
-      rec:recommend2(trow,c,sb,mode==='jong'&&jr&&jr.orb!=null?jr.orb:null,mode==='jong')});
+      rec:recommend2(trow,c,sb,mode==='jong'&&jr&&jr.orb!=null?jr.orb:null,mode==='jong'),
+      sub:subRank(c,c.rec&&c.rec.list.length?c.rec.list:(sb?sb.subs:[]))});
   }
   return {done,missing};
+}
+
+// ===== 부옵 교체 우선순위 =====
+// 유효 부옵 "줄 수"가 적은 부위부터. 같으면 유효 부옵 강화 횟수가 적은 순 → 유효 비율이 낮은 순.
+// 터널 유물(머리·손·몸통·신발)과 차원 장신구(구체·매듭)는 따로 순위를 매김.
+function subRank(ch, list){
+  if (!list || !list.length) return null;
+  const rows=ch.rel.concat(ch.orn).map(p=>{
+    let use=0,tot=0,lines=0; const good={},bad={};
+    for (const [t,,n] of p.s){ const k=n||0; tot+=k; if (list.some(x=>sameMain(x,t))){use+=k;lines++;good[t]=(good[t]||0)+k} else {bad[t]=(bad[t]||0)+k} }
+    return {pos:p.pos,slot:POS_NAME[p.pos],set:setName(setOf(p)),main:p.pos>=3?mainName(p.m[0]):'',lv:p.lv,lines,use,tot,good,bad,ratio:tot?use/tot:0};
+  });
+  const cmp=(a,b)=>a.lines-b.lines||a.use-b.use||a.ratio-b.ratio||a.pos-b.pos;
+  return {relic:rows.filter(r=>r.pos<=4).sort(cmp), planar:rows.filter(r=>r.pos>=5).sort(cmp)};
 }
 const ORDER=['4세트','장신구','몸통 주옵','신발 주옵','구체 주옵','매듭 주옵','행적'];
 
@@ -858,7 +886,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const tier=p=>p==null?'var(--muted)':p>=99.95?'var(--good)':p>=75?'var(--warn)':'var(--bad)';
 const BUILTIN_SRC='내장 (2026-11-03, 4.6V)';
 let state={chars:EXAMPLE,isExample:true,when:EXAMPLE_DATE,jong:JONG,jongSrc:BUILTIN_SRC,setting:SETTING_BUILTIN,setSrc:BUILTIN_SRC,
-  mode:LS.get(K.mode)==='set'?'set':'jong',result:null,deltas:{},filter:'all',sort:'name',fav:new Set(LS.get(K.fav)||[])};
+  mode:LS.get(K.mode)==='jong'?'jong':'set',result:null,deltas:{},filter:'all',sort:'name',fav:new Set(LS.get(K.fav)||[])};
 
 function computeDeltas(scores){
   const key=K.hist+state.mode, hist=LS.get(key)||[]; const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -914,6 +942,23 @@ function recLine(r){
   return '<li><b>'+esc(r.slot)+' 주옵 '+esc(r.from)+' → '+esc(r.to)+'</b>'+(r.d>=0.05?'<span class="gain">+'+r.d.toFixed(1)+'%p</span>':'')+'<small>'+esc([ch,...why].filter(Boolean).join(' · '))+'</small></li>';
 }
 function hitChips(h){return Object.entries(h.by).sort((a,b)=>b[1]-a[1]).map(([t,n])=>'<span>'+esc(SUBN[t]||t)+'<i>'+n+'</i></span>').join('')}
+function subRow(x,i,c){
+  const mainSwap=c.rec.some(r=>r.kind==='swap'&&r.pos===x.pos);
+  const g=Object.entries(x.good).sort((a,b)=>b[1]-a[1]).map(([t,n])=>(SUBN[t]||t)+' '+n+'회').join(' · ');
+  const b=Object.entries(x.bad).sort((a,b)=>b[1]-a[1]).map(([t,n])=>(SUBN[t]||t)+' '+n+'회').join(', ');
+  return '<li><span class="rk">'+(i+1)+'</span><span><b>'+esc(x.slot)+'</b>'+(x.main?' <span class="muted">'+esc(x.main)+' 주옵</span>':'')+' <span class="muted">· '+esc(x.set)+'</span>'
+    +(x.lv<15?'<span class="tag lv">+'+x.lv+' 강화 전</span>':'')+(mainSwap?'<span class="tag">주옵도 교체 추천</span>':'')+'</span>'
+    +'<span class="u">'+x.lines+'줄</span><small>'+esc((g?'유효 '+g:'유효 부옵 없음')+(b?' · 그 외 '+b:'')+' · 유효 강화 '+x.use+'/'+x.tot)+'</small></li>';
+}
+function subBlock(c){
+  if(!c.sub) return '';
+  const R=c.sub.relic, P=c.sub.planar; if(!R.length&&!P.length) return '';
+  const rel=R.length?'<h5>터널 유물 (머리·손·몸통·신발)</h5><ol>'+R.slice(0,2).map((x,i)=>subRow(x,i,c)).join('')+'</ol>'
+    +(R.length>2?'<details><summary>나머지 '+(R.length-2)+'부위 보기</summary><ol>'+R.slice(2).map((x,i)=>subRow(x,i+2,c)).join('')+'</ol></details>':''):'';
+  const pla=P.length?'<h5>차원 장신구 (구체·매듭)</h5><ol>'+P.map((x,i)=>subRow(x,i,c)).join('')+'</ol>':'';
+  return '<div class="subrank"><h4>부옵 교체 우선순위</h4>'+rel+pla
+    +'<p>유효 부옵이 붙은 줄 수가 적은 부위부터 보여줘요. 줄 수가 같으면 유효 부옵 강화 횟수가 적은 쪽이 먼저예요. 위에서부터 같은 세트·같은 주옵이면서 유효 부옵이 더 많은 장비로 바꾸면 좋아요.</p></div>';
+}
 function card(c){
   const fav=state.fav.has(c.name), d=state.deltas[c.name];
   const dl=d!=null&&Math.abs(d)>=0.05?' <span class="delta '+(d>0?'up':'down')+'">'+(d>0?'▲ +':'▼ ')+d.toFixed(1)+'%p</span>':'';
@@ -926,7 +971,7 @@ function card(c){
     +'<div class="card-top"><div class="who"><button type="button" class="starbtn" data-star="'+esc(c.name)+'" aria-pressed="'+fav+'" aria-label="'+esc(c.name)+' 즐겨찾기">'+(fav?'★':'☆')+'</button><h3>'+esc(c.name)+'</h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
     +'<div class="pctbox"><span class="pct">'+(c.total==null?'—':c.total.toFixed(1)+'<span style="font-size:.55em">%</span>')+'</span><span class="pct-l">'+(c.total==null?'목표 수치 없음':'수치 달성률')+dl+'</span></div>'
     +(c.total==null?'':'<div class="bar"><i style="width:'+c.total.toFixed(1)+'%"></i></div>')+'</div>'
-    +'<div class="checks">'+checks+'</div>'+(items?'<ul class="items">'+items+'</ul>':'')+score+rec
+    +'<div class="checks">'+checks+'</div>'+(items?'<ul class="items">'+items+'</ul>':'')+score+rec+subBlock(c)
     +(c.note?'<p class="note">시트 메모 · '+esc(c.note)+'</p>':'')+'</article>';
 }
 function status(id,msg,kind){const s=$(id);s.textContent=msg;s.className='status '+(kind||'')}

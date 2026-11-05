@@ -68,8 +68,24 @@ button:hover,.filebtn:hover{border-color:var(--accent)}
 .seg button{border:0;border-radius:0;padding:7px 12px}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
 select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;align-items:start}
-@media (max-width:420px){.grid{grid-template-columns:minmax(0,1fr)}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;align-items:stretch}
+.tile{position:relative;display:flex;align-items:center;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.tile.fav{border-color:var(--star)}
+.tile.open{outline:2px solid var(--accent);outline-offset:-1px}
+.tile-main{flex:1;min-width:0;display:flex;align-items:baseline;gap:6px;text-align:left;border:0;background:none;color:var(--ink);padding:12px 2px 12px 14px;font-family:var(--display);font-size:1.06rem;cursor:pointer;border-radius:12px}
+.tile-main .eid{flex-shrink:0}
+.tile-main:hover .nm{color:var(--accent)}
+.tile-main .nm{min-width:0;word-break:keep-all;overflow-wrap:anywhere}
+.tile .starbtn{align-self:stretch;padding:0 10px}
+.detail{grid-column:1/-1;position:relative;background:var(--surface);border:1px solid var(--accent);border-radius:14px;margin-top:2px;min-width:0}
+.detail::before{content:"";position:absolute;top:-8px;left:var(--caret-x,40px);width:14px;height:14px;background:var(--surface);border-left:1px solid var(--accent);border-top:1px solid var(--accent);transform:translateX(-50%) rotate(45deg)}
+.detail-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 14px;align-items:center;padding:14px 16px 10px}
+.detail-head .bar{grid-column:1/-1}
+.detail-head .close{border:0;background:var(--sunk);border-radius:8px;width:2.2em;height:2.2em;padding:0;font-size:1rem;color:var(--muted)}
+.detail-head .close:hover{color:var(--ink)}
+.detail-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start;border-top:1px dashed var(--line)}
+.detail-body>div{min-width:0;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){.detail{animation:open .18s ease-out}@keyframes open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;align-content:start;min-width:0}
 .card.fav{border-color:var(--star)}
 .card-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 16px 10px;border-top:4px solid var(--stripe)}
@@ -886,7 +902,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const tier=p=>p==null?'var(--muted)':p>=99.95?'var(--good)':p>=75?'var(--warn)':'var(--bad)';
 const BUILTIN_SRC='내장 (2026-11-03, 4.6V)';
 let state={chars:EXAMPLE,isExample:true,when:EXAMPLE_DATE,jong:JONG,jongSrc:BUILTIN_SRC,setting:SETTING_BUILTIN,setSrc:BUILTIN_SRC,
-  mode:LS.get(K.mode)==='jong'?'jong':'set',result:null,deltas:{},filter:'all',sort:'name',fav:new Set(LS.get(K.fav)||[])};
+  mode:LS.get(K.mode)==='jong'?'jong':'set',result:null,deltas:{},open:null,list:[],filter:'all',sort:'name',fav:new Set(LS.get(K.fav)||[])};
 
 function computeDeltas(scores){
   const key=K.hist+state.mode, hist=LS.get(key)||[]; const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -908,8 +924,8 @@ function render(){
   $('src').innerHTML=(state.isExample?'<span class="pill ex">아직 내 데이터가 없어요</span>':'<span class="pill">내 데이터 · '+esc(state.when)+'</span>')
     +'<span class="pill">세팅 탭 · '+esc(state.setSrc)+'</span><span class="pill">종결 탭 · '+esc(state.jongSrc)+'</span>'
     +(state.baseTs?'<span class="muted">변화량은 '+esc(new Date(state.baseTs).toLocaleString('ko-KR'))+' 대비</span>':'');
-  $('mode-note').textContent=jm?'종결 탭에 있는 한정 캐릭터를 종결 세트·수치로 봐요. 부위별 주옵과 행적은 세팅 탭 기준이에요. ☆를 누르면 즐겨찾기가 되고 맨 위에 와요.'
-    :'세팅 탭에 있는 모든 캐릭터를 세팅 탭의 세트·주옵·수치로 봐요. ☆를 누르면 즐겨찾기가 되고 맨 위에 와요.';
+  $('mode-note').textContent=jm?'종결 탭에 있는 한정 캐릭터를 종결 세트·수치로 봐요. 부위별 주옵과 행적은 세팅 탭 기준이에요. 이름을 누르면 그 줄 아래에 자세한 내용이 펼쳐지고, ☆를 누르면 즐겨찾기가 되어 맨 위에 와요.'
+    :'세팅 탭에 있는 모든 캐릭터를 세팅 탭의 세트·주옵·수치로 봐요. 이름을 누르면 그 줄 아래에 자세한 내용이 펼쳐지고, ☆를 누르면 즐겨찾기가 되어 맨 위에 와요.';
   if(state.isExample){
     $('summary').innerHTML=['평균 수치 달성률','세트·주옵·행적 모두 O',(jm?'종결':'세팅')+' 달성','평균 유효 부옵 명중'].map(l=>'<div class="stat"><span>'+l+'</span><b>—</b></div>').join('');
     $('grid').innerHTML='<div class="empty">아직 데이터가 없어요. 위의 "내 데이터 넣기"에 HoYoLAB 데이터를 붙여넣으면 여기에 캐릭터별 진척도가 나와요.</div>';
@@ -932,7 +948,9 @@ function render(){
   const T=c=>c.total==null?-1:c.total;
   const cmp=state.sort==='high'?(a,b)=>T(b)-T(a):state.sort==='low'?(a,b)=>T(a)-T(b):state.sort==='hits'?(a,b)=>((b.hy||{}).total||0)-((a.hy||{}).total||0):(a,b)=>a.name.localeCompare(b.name,'ko');
   list.sort((a,b)=>(state.fav.has(b.name)-state.fav.has(a.name))||cmp(a,b)||a.name.localeCompare(b.name,'ko'));
-  $('grid').innerHTML=list.length?list.map(card).join(''):'<div class="empty">'+(state.filter==='done'?'아직 달성한 캐릭터가 없어요.':'해당하는 캐릭터가 없어요.')+'</div>';
+  state.list=list;
+  $('grid').innerHTML=list.length?list.map(tile).join(''):'<div class="empty">'+(state.filter==='done'?'아직 달성한 캐릭터가 없어요.':'해당하는 캐릭터가 없어요.')+'</div>';
+  placePanel();
   $('missing').innerHTML=res.missing.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(m=>'<span class="pill">'+esc(m.name)+' <span class="muted">'+esc(m.why)+'</span></span>').join('')||'<span class="muted">없음</span>';
 }
 function recLine(r){
@@ -959,20 +977,41 @@ function subBlock(c){
   return '<div class="subrank"><h4>부옵 교체 우선순위</h4>'+rel+pla
     +'<p>유효 부옵이 붙은 줄 수가 적은 부위부터 보여줘요. 줄 수가 같으면 유효 부옵 강화 횟수가 적은 쪽이 먼저예요. 위에서부터 같은 세트·같은 주옵이면서 유효 부옵이 더 많은 장비로 바꾸면 좋아요.</p></div>';
 }
-function card(c){
-  const fav=state.fav.has(c.name), d=state.deltas[c.name];
+function tile(c){
+  const fav=state.fav.has(c.name), open=state.open===c.name;
+  return '<div class="tile'+(fav?' fav':'')+(open?' open':'')+'" data-tile="'+esc(c.name)+'">'
+    +'<button type="button" class="tile-main" data-open="'+esc(c.name)+'" aria-expanded="'+open+'" aria-controls="detail"><span class="nm">'+esc(c.name)+'</span>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+'</button>'
+    +'<button type="button" class="starbtn" data-star="'+esc(c.name)+'" aria-pressed="'+fav+'" aria-label="'+esc(c.name)+' 즐겨찾기">'+(fav?'★':'☆')+'</button></div>';
+}
+function detail(c){
+  const d=state.deltas[c.name];
   const dl=d!=null&&Math.abs(d)>=0.05?' <span class="delta '+(d>0?'up':'down')+'">'+(d>0?'▲ +':'▼ ')+d.toFixed(1)+'%p</span>':'';
   const checks=c.checks.map(x=>'<div class="chk"><span class="ox '+(x.ok?'o':'x')+'" aria-label="'+(x.ok?'맞음':'아님')+'">'+(x.ok?'O':'X')+'</span><span class="k">'+esc(x.k)+'</span><span class="v">'+esc(x.cur)+(x.ok?'':' <span class="muted">→ '+esc(x.tgt)+'</span>')+(x.src&&!x.ok?'<span class="srctag">'+esc(x.src)+'</span>':'')+(x.why?'<small>'+esc(x.why)+'</small>':'')+'</span></div>').join('');
   const items=c.items.map(i=>'<li style="--itier:'+tier(i.p)+'"><span class="k">'+esc(i.k)+'</span><span class="v"><span><span class="mono">'+esc(i.cur)+'</span> <span class="muted">/ '+esc(i.tgt)+'</span></span><span class="bar"><i style="width:'+i.p.toFixed(1)+'%"></i></span></span><span class="p">'+Math.round(i.p)+'</span></li>').join('');
   const score=c.hy?'<div class="score"><b>'+c.hy.total+'</b><div class="chips">'+hitChips(c.hy)+'</div><small>유효 부옵 명중 · '+(c.hyCustom?'내가 설정한 유효 옵션':'HoYoLAB 추천 옵션')+(c.sh?' · 세팅 탭 기준 '+c.sh.total:'')+'</small></div>':'';
   const rec=c.rec.length?'<div class="rec"><h4>주옵 추천</h4><ul>'+c.rec.map(recLine).join('')+'</ul></div>':'';
-  const stripe=c.complete?'var(--good)':c.allOk&&(c.total==null||c.total>=75)?'var(--warn)':'var(--bad)';
-  return '<article class="card'+(fav?' fav':'')+'" style="--tier:'+tier(c.total)+';--stripe:'+stripe+'">'
-    +'<div class="card-top"><div class="who"><button type="button" class="starbtn" data-star="'+esc(c.name)+'" aria-pressed="'+fav+'" aria-label="'+esc(c.name)+' 즐겨찾기">'+(fav?'★':'☆')+'</button><h3>'+esc(c.name)+'</h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
+  return '<div class="detail-head" style="--tier:'+tier(c.total)+'"><div class="who"><h3>'+esc(c.name)+'</h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
     +'<div class="pctbox"><span class="pct">'+(c.total==null?'—':c.total.toFixed(1)+'<span style="font-size:.55em">%</span>')+'</span><span class="pct-l">'+(c.total==null?'목표 수치 없음':'수치 달성률')+dl+'</span></div>'
+    +'<button type="button" class="close" data-close aria-label="닫기">✕</button>'
     +(c.total==null?'':'<div class="bar"><i style="width:'+c.total.toFixed(1)+'%"></i></div>')+'</div>'
-    +'<div class="checks">'+checks+'</div>'+(items?'<ul class="items">'+items+'</ul>':'')+score+rec+subBlock(c)
-    +(c.note?'<p class="note">시트 메모 · '+esc(c.note)+'</p>':'')+'</article>';
+    +'<div class="detail-body"><div><div class="checks">'+checks+'</div>'+(items?'<ul class="items">'+items+'</ul>':'')+'</div>'
+    +'<div>'+score+rec+(c.note?'<p class="note">시트 메모 · '+esc(c.note)+'</p>':'')+'</div>'
+    +'<div>'+subBlock(c)+'</div></div>';
+}
+// 펼친 캐릭터의 상세를, 그 캐릭터가 있는 줄 바로 아래에 가로 전체 폭으로 끼워 넣음
+function placePanel(){
+  const old=$('detail'); if(old) old.remove();
+  document.querySelectorAll('.tile.open').forEach(x=>{x.classList.remove('open');x.querySelector('.tile-main').setAttribute('aria-expanded','false')});
+  const c=state.open&&(state.list||[]).find(x=>x.name===state.open);
+  if(!c){state.open=null;return null}
+  const tiles=[...document.querySelectorAll('#grid .tile')], i=tiles.findIndex(x=>x.dataset.tile===c.name);
+  if(i<0) return null;
+  const top=tiles[i].offsetTop; let last=i; while(last+1<tiles.length&&tiles[last+1].offsetTop===top) last++;
+  const el=document.createElement('section'); el.id='detail'; el.className='detail'; el.setAttribute('aria-label',c.name+' 상세');
+  el.innerHTML=detail(c); tiles[last].after(el);
+  tiles[i].classList.add('open'); tiles[i].querySelector('.tile-main').setAttribute('aria-expanded','true');
+  el.style.setProperty('--caret-x',(tiles[i].offsetLeft-el.offsetLeft+tiles[i].offsetWidth/2)+'px');
+  return el;
 }
 function status(id,msg,kind){const s=$(id);s.textContent=msg;s.className='status '+(kind||'')}
 function ingest(text){
@@ -1019,13 +1058,30 @@ $('reset').addEventListener('click',()=>{LS.del(K.data);LS.del(K.hist+'jong');LS
 // 즐겨찾기: 별은 바로 바뀌고, 순서는 마지막으로 누른 뒤 3초 후에 반영
 let favTimer=null;
 $('grid').addEventListener('click',e=>{
-  const b=e.target.closest('[data-star]');if(!b)return;
-  const n=b.dataset.star, on=!state.fav.has(n);
-  on?state.fav.add(n):state.fav.delete(n); LS.set(K.fav,[...state.fav]);
-  b.textContent=on?'★':'☆'; b.setAttribute('aria-pressed',String(on));
-  const card=b.closest('.card'); if(card) card.classList.toggle('fav',on);
-  clearTimeout(favTimer); favTimer=setTimeout(()=>{favTimer=null;render()},3000);
+  const s=e.target.closest('[data-star]');
+  if(s){
+    const n=s.dataset.star, on=!state.fav.has(n);
+    on?state.fav.add(n):state.fav.delete(n); LS.set(K.fav,[...state.fav]);
+    s.textContent=on?'★':'☆'; s.setAttribute('aria-pressed',String(on));
+    const tl=s.closest('.tile'); if(tl) tl.classList.toggle('fav',on);
+    clearTimeout(favTimer); favTimer=setTimeout(()=>{favTimer=null;render()},3000);
+    return;
+  }
+  const o=e.target.closest('[data-open]');
+  if(o){
+    state.open=state.open===o.dataset.open?null:o.dataset.open;
+    const el=placePanel();
+    if(el) el.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+    return;
+  }
+  if(e.target.closest('[data-close]')) closePanel();
 });
+function closePanel(){
+  const n=state.open; state.open=null; placePanel();
+  const b=n&&document.querySelector('[data-open="'+CSS.escape(n)+'"]'); if(b) b.focus();
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.open) closePanel(); });
+let rsT=null; window.addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(state.open)placePanel()},120)});
 document.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('click',()=>{state.mode=b.dataset.m;LS.set(K.mode,state.mode);recompute()}));
 document.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',()=>{state.filter=b.dataset.f;document.querySelectorAll('[data-f]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render()}));
 $('sort').addEventListener('change',e=>{state.sort=e.target.value;render()});

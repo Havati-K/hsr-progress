@@ -14,7 +14,7 @@
 :root{
   --bg:#eef0f6; --surface:#ffffff; --sunk:#f5f6fa; --ink:#1a1c2e; --muted:#5b6080; --line:#dcdfeb;
   --accent:#2f3fb8; --gold:#a8771c; --gold-soft:#f6ecd6; --star:#d39b1f;
-  --track:#eef0f5; --good:#23825a; --good-soft:#dff2e8; --warn:#a8771c; --bad:#bf3f3a; --bad-soft:#f8e1df;
+  --track:#eef0f5; --rare:#2f7cf0; --epic:#8b4fe6; --unique:#c99a00; --legend:#4fae12; --good:#23825a; --good-soft:#dff2e8; --warn:#a8771c; --bad:#bf3f3a; --bad-soft:#f8e1df;
   --display:"Do Hyeon","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
@@ -22,11 +22,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0f1120; --surface:#171a2d; --sunk:#12152a; --ink:#e8e9f5; --muted:#9ca1c2; --line:#2a2e48;
   --accent:#9aa6ff; --gold:#e3b65c; --gold-soft:#3a2f17; --star:#f0c45a;
-  --track:#252a43; --good:#5cc894; --good-soft:#163527; --warn:#e3b65c; --bad:#f07a73; --bad-soft:#3e1e1e; color-scheme:dark}}
+  --track:#252a43; --rare:#5aa6ff; --epic:#b583ff; --unique:#ffd23f; --legend:#8fe33b; --good:#5cc894; --good-soft:#163527; --warn:#e3b65c; --bad:#f07a73; --bad-soft:#3e1e1e; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1120; --surface:#171a2d; --sunk:#12152a; --ink:#e8e9f5; --muted:#9ca1c2; --line:#2a2e48;
   --accent:#9aa6ff; --gold:#e3b65c; --gold-soft:#3a2f17; --star:#f0c45a;
-  --track:#252a43; --good:#5cc894; --good-soft:#163527; --warn:#e3b65c; --bad:#f07a73; --bad-soft:#3e1e1e; color-scheme:dark}
+  --track:#252a43; --rare:#5aa6ff; --epic:#b583ff; --unique:#ffd23f; --legend:#8fe33b; --good:#5cc894; --good-soft:#163527; --warn:#e3b65c; --bad:#f07a73; --bad-soft:#3e1e1e; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
 .wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
@@ -85,6 +85,7 @@ select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1
 .detail-head .bar{grid-column:1/-1}
 .detail-head .close{border:0;background:var(--sunk);border-radius:8px;width:2.2em;height:2.2em;padding:0;font-size:1rem;color:var(--muted)}
 .detail-head .close:hover{color:var(--ink)}
+.detail-head .grade{color:var(--tier);font-weight:700}
 .detail-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start;border-top:1px dashed var(--line)}
 .detail-body>div{min-width:0;padding-top:8px}
 .gearsec{padding:10px 16px 14px;border-top:1px dashed var(--line)}
@@ -294,6 +295,7 @@ tr:last-child td{border-bottom:0}
     <div class="rules">
       <p><b>기준</b> · "종결 기준"은 종결 탭의 세트·수치를, "세팅 기준"은 세팅 탭의 세트·수치를 써요. 부위별 주옵(몸통·신발·구체·매듭)과 행적은 종결 탭에 없어서 두 기준 모두 세팅 탭으로 판정해요. 세팅 탭에 빌드가 여러 개인 캐릭터는 지금 착용 상태와 가장 잘 맞는 빌드를 골라요.</p>
       <p><b>O/X</b> · 4세트는 적힌 세트 중 하나를 4개 끼면 O. "속도 2+2"처럼 적힌 건 그 효과를 주는 2세트 두 개면 O, "제자 + 명장"은 두 세트를 2개씩 끼면 O. 장신구·부위 주옵은 적힌 것 중 하나면 O. 행적은 일반 공격·전투 스킬·필살기·특성 레벨이 적힌 값 이상이면 O(성혼 보너스 포함 레벨).</p>
+      <p><b>등급 색</b> · 달성률에 따라 메이플 등급처럼 색을 칠해요. 95% 이상 레전드리(연두), 85% 이상 유니크(노랑), 75% 이상 에픽(보라), 그 아래 레어(파랑).</p>
       <p><b>수치 달성률</b> · 목표마다 현재값 ÷ 목표값(최대 100%)의 평균이에요. "미만" 조건은 넘으면 넘은 만큼 깎여요. 값은 HoYoLAB 캐릭터 화면 기준이에요. <b>달성</b>은 O/X가 모두 O이고 수치가 100%일 때예요.</p>
       <p><b>유효 부옵 명중</b> · HoYoLAB '유물 속성' 화면의 "명중 총합"과 같은 계산이에요. 유효 부옵마다 처음 붙은 것까지 포함한 강화 횟수를 6부위 모두 더해요. 유효 부옵 목록은 HoYoLAB 추천(직접 설정했다면 그 설정)을 쓰고, 세팅 탭의 유효 부가옵션 기준 값도 함께 보여줘요(시트의 "공격력"·"HP"·"방어력"은 % 옵션으로 셈).</p>
       <p><b>주옵 추천</b> · 머리(HP)·손(공격력)은 주옵이 고정이라 빼고 몸통·신발·구체·매듭만 봐요. 지금 주옵이 세팅 탭에 없는 옵션이면 세팅 탭 옵션 중 가장 좋은 걸 권하고, 세팅 탭 옵션끼리라도 수치가 0.5%p 이상 오르면 권해요. 종결 기준에서는 종결 수치가 오르는 교체만 보여줘요. 새 유물은 +15로 계산하고, 새 유물에는 주옵과 같은 옵션이 부옵으로 붙을 수 없어서 지금 그 부위에 붙은 같은 부옵은 빼고 계산해요. +15가 안 된 유물이 있으면 강화부터 권해요.</p>
@@ -928,7 +930,8 @@ const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return 
 const K={data:'hsr-jong3:data',hist:'hsr-jong3:history:',fav:'hsr-jong2:fav',jong:'hsr-jong3:sheet-jong',set:'hsr-jong3:sheet-set',urls:'hsr-jong3:urls',mode:'hsr-jong3:mode'};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const tier=p=>p==null?'var(--muted)':p>=99.95?'var(--good)':p>=75?'var(--warn)':'var(--bad)';
+const grade=p=>p==null?null:p>=95?['레전드리','var(--legend)']:p>=85?['유니크','var(--unique)']:p>=75?['에픽','var(--epic)']:['레어','var(--rare)'];
+const tier=p=>p==null?'var(--muted)':grade(p)[1];
 const BUILTIN_SRC='내장 (2026-11-03, 4.6V)';
 let state={chars:EXAMPLE,isExample:true,when:EXAMPLE_DATE,jong:JONG,jongSrc:BUILTIN_SRC,setting:SETTING_BUILTIN,setSrc:BUILTIN_SRC,
   mode:LS.get(K.mode)==='jong'?'jong':'set',result:null,deltas:{},open:null,list:[],filter:'all',sort:'name',fav:new Set(LS.get(K.fav)||[])};
@@ -1043,7 +1046,7 @@ function detail(c){
   const score=c.hy?'<div class="score"><b>'+c.hy.total+'</b><div class="chips">'+hitChips(c.hy)+'</div><small>유효 부옵 명중 · '+(c.hyCustom?'내가 설정한 유효 옵션':'HoYoLAB 추천 옵션')+(c.sh?' · 세팅 탭 기준 '+c.sh.total:'')+'</small></div>':'';
   const rec=c.rec.length?'<div class="rec"><h4>주옵 추천</h4><ul>'+c.rec.map(recLine).join('')+'</ul></div>':'';
   return '<div class="detail-head" style="--tier:'+tier(c.total)+'"><div class="who"><h3>'+esc(c.name)+'</h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
-    +'<div class="pctbox"><span class="pct">'+(c.total==null?'—':c.total.toFixed(1)+'<span style="font-size:.55em">%</span>')+'</span><span class="pct-l">'+(c.total==null?'목표 수치 없음':'수치 달성률')+dl+'</span></div>'
+    +'<div class="pctbox"><span class="pct">'+(c.total==null?'—':c.total.toFixed(1)+'<span style="font-size:.55em">%</span>')+'</span><span class="pct-l">'+(c.total==null?'목표 수치 없음':'수치 달성률 · <b class="grade">'+grade(c.total)[0]+'</b>')+dl+'</span></div>'
     +'<button type="button" class="close" data-close aria-label="닫기">✕</button>'
     +(c.total==null?'':'<div class="bar"><i style="width:'+c.total.toFixed(1)+'%"></i></div>')+'</div>'
     +gearBlock(c)+'<div class="detail-body"><div><div class="checks">'+checks+'</div>'+(items?'<ul class="items">'+items+'</ul>':'')+'</div>'

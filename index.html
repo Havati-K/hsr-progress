@@ -95,12 +95,14 @@ select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1
 .rhead{width:100%;display:grid;grid-template-columns:1.1em 3.6em auto minmax(0,1fr) auto auto 4.4em;align-items:center;gap:4px 10px;border:0;background:var(--surface);color:var(--ink);padding:10px 14px 12px;text-align:left;font:inherit;cursor:pointer;position:relative}
 .rhead:hover{background:var(--sunk)}.route.open .rhead{background:var(--sunk)}
 .rhead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.caret{color:var(--accent)}.rno{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.caret{color:var(--accent);display:inline-block}.route.open .caret{transform:rotate(90deg)}.rno{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
 .rlab{font-family:var(--display);font-size:1.02rem;white-space:nowrap}.rlab em{font-style:normal;font-family:var(--body);font-size:.68rem;margin-left:6px;padding:0 5px;border-radius:4px;background:var(--gold-soft);color:var(--gold)}
 .rsets{font-size:.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .near{font-size:.7rem;padding:1px 7px;border-radius:999px;background:var(--accent);color:var(--surface);white-space:nowrap}
 .rox{font-size:.76rem;color:var(--muted);white-space:nowrap}.rpct{font-family:var(--mono);font-weight:700;text-align:right}
 .rbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--track)}.rbar i{display:block;height:100%}
+.rwrap{display:grid;grid-template-rows:0fr}.route.open .rwrap{grid-template-rows:1fr}.rin{overflow:hidden;min-height:0}
+@media (prefers-reduced-motion:no-preference){.rwrap{transition:grid-template-rows .26s ease}.rin{transition:opacity .2s ease}.route:not(.open) .rin{opacity:0}.caret{transition:transform .2s ease}.route{transition:border-color .2s}.edge i{transition:width .5s ease,background .3s}}
 .rbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start;border-top:1px dashed var(--line)}.rbody>div{min-width:0;padding-top:8px}
 @media (max-width:640px){.rhead{grid-template-columns:1.1em auto minmax(0,1fr) auto}.rno{display:none}.rsets{grid-column:2/-1;grid-row:2}.rtags{grid-column:2/-1;grid-row:3}.rtags:empty{display:none}.rox{display:none}.rpct{grid-column:4;grid-row:1}}
 .gearsec{padding:10px 16px 14px;border-top:1px dashed var(--line)}
@@ -1108,10 +1110,10 @@ function routeBlock(c){
   const op=state.ropen[c.name]!==undefined?state.ropen[c.name]:c.ri;
   const rows=c.routes.map(r=>{
     const open=r.i===op, id='rt-'+r.i;
-    const body=open?'<div class="rbody" id="'+id+'"><div><div class="checks">'+chkRows(r.checks)+'</div>'+(r.items.length?'<ul class="items">'+itemRows(r.items)+'</ul>':'')+'</div>'
-      +'<div>'+(r.rec.length?'<div class="rec"><h4>주옵 추천</h4><ul>'+r.rec.map(recLine).join('')+'</ul></div>':'<p class="note">이 루트 기준으로 바꿀 주옵이 없어요.</p>')+(r.note?'<p class="note">시트 메모 · '+esc(r.note)+'</p>':'')+'</div></div>':'';
-    return '<div class="route'+(open?' open':'')+(r.i===c.ri?' cur':'')+'"><button type="button" class="rhead" data-route="'+r.i+'" aria-expanded="'+open+'">'
-      +'<span class="caret" aria-hidden="true">'+(open?'▾':'▸')+'</span><span class="rno">루트 '+(r.i+1)+'</span>'
+    const body='<div class="rwrap" id="'+id+'"'+(open?'':' inert')+'><div class="rin"><div class="rbody"><div><div class="checks">'+chkRows(r.checks)+'</div>'+(r.items.length?'<ul class="items">'+itemRows(r.items)+'</ul>':'')+'</div>'
+      +'<div>'+(r.rec.length?'<div class="rec"><h4>주옵 추천</h4><ul>'+r.rec.map(recLine).join('')+'</ul></div>':'<p class="note">이 루트 기준으로 바꿀 주옵이 없어요.</p>')+(r.note?'<p class="note">시트 메모 · '+esc(r.note)+'</p>':'')+'</div></div></div></div>';
+    return '<div class="route'+(open?' open':'')+(r.i===c.ri?' cur':'')+'"><button type="button" class="rhead" data-route="'+r.i+'" aria-expanded="'+open+'" aria-controls="'+id+'">'
+      +'<span class="caret" aria-hidden="true">▸</span><span class="rno">루트 '+(r.i+1)+'</span>'
       +'<span class="rlab">'+esc(r.label)+(r.alt?'<em>대체</em>':'')+'</span><span class="rsets">'+esc(r.sets)+'</span>'
       +'<span class="rtags">'+(r.i===c.near?'<span class="near">지금 장비와 가장 가까움</span>':'')+'</span>'
       +'<span class="rox">'+(r.x?'X '+r.x:'모두 O')+'</span><span class="rpct" style="color:'+tier(r.total)+'">'+(r.total==null?'—':r.total.toFixed(1)+'%')+'</span>'
@@ -1197,19 +1199,35 @@ $('grid').addEventListener('click',e=>{
   }
   const rt=e.target.closest('[data-route]');
   if(rt){
-    const c=state.result.done.find(x=>x.name===state.open); if(!c||!c.routes) return;
+    const c=state.result.done.find(x=>x.name===state.open), det=$('detail'); if(!c||!c.routes||!det) return;
     const i=+rt.dataset.route, cur=state.ropen[c.name]!==undefined?state.ropen[c.name]:c.ri;
-    if(i===cur){ state.ropen[c.name]=-1; }
+    if(i===cur) state.ropen[c.name]=-1;
     else{
       state.ropen[c.name]=i; state.routeMem[c.name]={i,label:c.routes[i].label}; LS.set(K.route,state.routeMem);
-      const R=c.routes[i]; for(const k of ['checks','items','total','allOk','complete','note','sh','shList','rec','sub','useful']) c[k]=R[k]; c.ri=i;
+      if(i!==c.ri){ const R=c.routes[i]; for(const k of ['checks','items','total','allOk','complete','note','sh','shList','rec','sub','useful']) c[k]=R[k]; c.ri=i; refreshParts(c,det); }
     }
-    render();
-    const nb=document.querySelector('#detail [data-route="'+i+'"]'); if(nb){nb.focus({preventScroll:true});nb.scrollIntoView({block:'nearest'})}
+    const op=state.ropen[c.name];
+    det.querySelectorAll('.route').forEach((el,j)=>{
+      const on=j===op; el.classList.toggle('open',on); el.classList.toggle('cur',j===c.ri);
+      el.querySelector('.rhead').setAttribute('aria-expanded',String(on));
+      const w=el.querySelector('.rwrap'); if(on) w.removeAttribute('inert'); else w.setAttribute('inert','');
+    });
+    if(op>=0) setTimeout(()=>{const h=det.querySelector('[data-route="'+op+'"]');if(h)h.closest('.route').scrollIntoView({block:'nearest',behavior:RM()?'auto':'smooth'})},RM()?0:280);
     return;
   }
   if(e.target.closest('[data-close]')) closePanel();
 });
+const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 루트를 바꿨을 때: 머리(%·막대)·장비 현황·공통 칸만 새로 그리고, 카드 막대도 맞춤
+function refreshParts(c,det){
+  const tmp=document.createElement('div'); tmp.innerHTML=detail(c);
+  const oldBar=det.querySelector('.detail-head .bar i'), w0=oldBar?oldBar.style.width:null;
+  for(const sel of ['.detail-head','.gearsec','.common']){ const o=det.querySelector(sel), n=tmp.querySelector(sel); if(o&&n) o.replaceWith(n); }
+  const nb=det.querySelector('.detail-head .bar i');
+  if(nb&&w0!=null&&!RM()){ const w1=nb.style.width; nb.style.width=w0; requestAnimationFrame(()=>requestAnimationFrame(()=>{nb.style.width=w1})); }
+  const edge=document.querySelector('.tile[data-tile="'+CSS.escape(c.name)+'"] .edge');
+  if(edge){ const ei=edge.querySelector('i'); if(c.total==null) edge.innerHTML=''; else if(ei){ ei.style.width=c.total.toFixed(1)+'%'; ei.style.background=tier(c.total); } else edge.innerHTML='<i style="width:'+c.total.toFixed(1)+'%;background:'+tier(c.total)+'"></i>'; }
+}
 function closePanel(){
   const n=state.open; state.open=null; placePanel();
   const b=n&&document.querySelector('[data-open="'+CSS.escape(n)+'"]'); if(b) b.focus();

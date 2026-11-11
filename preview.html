@@ -82,7 +82,8 @@ select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1
 .tile .starbtn{align-self:stretch;padding:0 10px}
 .detail{grid-column:1/-1;position:relative;background:var(--surface);border:1px solid var(--accent);border-radius:14px;margin-top:2px;min-width:0}
 .detail::before{content:"";position:absolute;top:-8px;left:var(--caret-x,40px);width:14px;height:14px;background:var(--surface);border-left:1px solid var(--accent);border-top:1px solid var(--accent);transform:translateX(-50%) rotate(45deg)}
-.detail-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 14px;align-items:center;padding:14px 16px 10px}
+.detail-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 14px;align-items:center;padding:14px 16px 10px;cursor:pointer;border-radius:13px 13px 0 0;transition:background-color .2s}
+.detail-head:hover,.detail-head:has(.whobtn:focus-visible){background:var(--sunk)}.whobtn:hover{background:none}
 .detail-head .bar{grid-column:1/-1}
 .detail-head .close{border:0;background:var(--sunk);border-radius:8px;width:2.2em;height:2.2em;padding:0;font-size:1rem;color:var(--muted)}
 .detail-head .close:hover{color:var(--ink)}
@@ -1100,7 +1101,7 @@ function detail(c){
   const items=c.items.map(i=>'<li style="--itier:'+tier(i.p)+'"><span class="k">'+esc(i.k)+'</span><span class="v"><span><span class="mono">'+esc(i.cur)+'</span> <span class="muted">/ '+esc(i.tgt)+'</span></span><span class="bar"><i style="width:'+i.p.toFixed(1)+'%"></i></span></span><span class="p">'+Math.round(i.p)+'</span></li>').join('');
   const score=c.hy?'<div class="score"><b>'+c.hy.total+'</b><div class="chips">'+hitChips(c.hy)+'</div><small>유효 부옵 명중 · '+(c.hyCustom?'내가 설정한 유효 옵션':'HoYoLAB 추천 옵션')+(c.sh?' · 세팅 탭 기준 '+c.sh.total:'')+'</small></div>':'';
   const rec=c.rec.length?'<div class="rec"><h4>주옵 추천</h4><ul>'+c.rec.map(recLine).join('')+'</ul></div>':'';
-  return '<div class="detail-head" style="--tier:'+tier(c.total)+'"><div class="who"><h3><button type="button" class="whobtn" data-close aria-expanded="true" title="이름을 누르면 접혀요"><span class="caret" aria-hidden="true">▸</span>'+esc(c.name)+'</button></h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.routes?'<span class="buildtag">루트 '+(c.ri+1)+' · '+esc(c.routes[c.ri].label)+(c.routes[c.ri].alt?' (대체)':'')+' 기준</span>':c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
+  return '<div class="detail-head" data-close style="--tier:'+tier(c.total)+'"><div class="who"><h3><button type="button" class="whobtn" data-close aria-expanded="true" title="누르면 접혀요"><span class="caret" aria-hidden="true">▸</span>'+esc(c.name)+'</button></h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.routes?'<span class="buildtag">루트 '+(c.ri+1)+' · '+esc(c.routes[c.ri].label)+(c.routes[c.ri].alt?' (대체)':'')+' 기준</span>':c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
     +'<div class="pctbox"><span class="pct">'+(c.total==null?'—':c.total.toFixed(1)+'<span style="font-size:.55em">%</span>')+'</span><span class="pct-l">'+(c.total==null?'목표 수치 없음':'수치 달성률 · <b class="grade">'+grade(c.total)[0]+'</b>')+dl+'</span></div>'
     +'<button type="button" class="close" data-close aria-label="닫기">✕</button>'
     +(c.total==null?'':'<div class="bar"><i style="width:'+c.total.toFixed(1)+'%"></i></div>')+'</div>'

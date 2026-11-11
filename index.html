@@ -28,6 +28,7 @@
   --accent:#9aa6ff; --gold:#e3b65c; --gold-soft:#3a2f17; --star:#f0c45a;
   --track:#252a43; --rare:#5aa6ff; --epic:#b583ff; --unique:#ffd23f; --legend:#8fe33b; --good:#5cc894; --good-soft:#163527; --warn:#e3b65c; --bad:#f07a73; --bad-soft:#3e1e1e; color-scheme:dark}
 *{box-sizing:border-box}
+:root{--ease:cubic-bezier(.4,0,.2,1)}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
 .wrap{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
 h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
@@ -81,7 +82,8 @@ select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1
 .tile .starbtn{align-self:stretch;padding:0 10px}
 .detail{grid-column:1/-1;position:relative;background:var(--surface);border:1px solid var(--accent);border-radius:14px;margin-top:2px;min-width:0}
 .detail::before{content:"";position:absolute;top:-8px;left:var(--caret-x,40px);width:14px;height:14px;background:var(--surface);border-left:1px solid var(--accent);border-top:1px solid var(--accent);transform:translateX(-50%) rotate(45deg)}
-.detail-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 14px;align-items:center;padding:14px 16px 10px}
+.detail-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 14px;align-items:center;padding:14px 16px 10px;cursor:pointer;border-radius:13px 13px 0 0;transition:background-color .2s}
+.detail-head:hover,.detail-head:has(.whobtn:focus-visible){background:var(--sunk)}.whobtn:hover{background:none}
 .detail-head .bar{grid-column:1/-1}
 .detail-head .close{border:0;background:var(--sunk);border-radius:8px;width:2.2em;height:2.2em;padding:0;font-size:1rem;color:var(--muted)}
 .detail-head .close:hover{color:var(--ink)}
@@ -102,7 +104,7 @@ select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1
 .rox{font-size:.76rem;color:var(--muted);white-space:nowrap}.rpct{font-family:var(--mono);font-weight:700;text-align:right}
 .rbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--track)}.rbar i{display:block;height:100%}
 .rwrap{display:grid;grid-template-rows:0fr}.route.open .rwrap{grid-template-rows:1fr}.rin{overflow:hidden;min-height:0}
-@media (prefers-reduced-motion:no-preference){.rwrap{transition:grid-template-rows .26s ease}.rin{transition:opacity .2s ease}.route:not(.open) .rin{opacity:0}.caret{transition:transform .2s ease}.route{transition:border-color .2s}.edge i{transition:width .5s ease,background .3s}}
+@media (prefers-reduced-motion:no-preference){.rwrap{transition:grid-template-rows .4s var(--ease)}.rin{transition:opacity .3s ease .06s}.route:not(.open) .rin{opacity:0;transition:opacity .18s ease}.caret{transition:transform .3s var(--ease)}.route{transition:border-color .3s}.rhead{transition:background-color .3s}.edge i{transition:width .5s ease,background .3s}}
 .rbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start;border-top:1px dashed var(--line)}.rbody>div{min-width:0;padding-top:8px}
 @media (max-width:640px){.rhead{grid-template-columns:1.1em auto minmax(0,1fr) auto}.rno{display:none}.rsets{grid-column:2/-1;grid-row:2}.rtags{grid-column:2/-1;grid-row:3}.rtags:empty{display:none}.rox{display:none}.rpct{grid-column:4;grid-row:1}}
 .gearsec{padding:10px 16px 14px;border-top:1px dashed var(--line)}
@@ -121,12 +123,16 @@ select{font:inherit;font-size:.88rem;padding:7px 10px;border-radius:9px;border:1
 .gearsec p{margin:8px 0 0;font-size:.75rem;color:var(--muted)}
 .lcline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 8px;font-size:.86rem}.lcline .k{font-size:.76rem;color:var(--muted)}
 .lcline .okx{font-size:.72rem;border-radius:5px;padding:0 6px}.lcline .okx.o{background:var(--good-soft);color:var(--good)}.lcline .okx.x{background:var(--bad-soft);color:var(--bad)}
-@media (prefers-reduced-motion:no-preference){.detail{animation:open .18s ease-out}@keyframes open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}
+@media (prefers-reduced-motion:no-preference){.detail::before{transition:left .36s var(--ease)}.tile{transition:outline-color .2s}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:grid;align-content:start;min-width:0}
 .card.fav{border-color:var(--star)}
 .card-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 16px 10px;border-top:4px solid var(--stripe)}
 .who{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;min-width:0}
-.who h3{font-size:1.3rem;overflow-wrap:anywhere;word-break:keep-all}
+.who h3{font-size:1.3rem;overflow-wrap:anywhere;word-break:keep-all;margin:0}
+.whobtn{display:inline-flex;align-items:center;gap:8px;border:0;background:none;color:inherit;font:inherit;padding:2px 6px 2px 2px;margin-left:-2px;border-radius:8px;cursor:pointer;text-align:left}
+.whobtn:hover{background:var(--sunk)}.whobtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.whobtn .caret{font-size:.62em;transform:rotate(90deg)}.detail.closing .whobtn .caret{transform:none}
+@media (prefers-reduced-motion:no-preference){.whobtn .caret{animation:caretIn .42s cubic-bezier(.4,0,.2,1)}@keyframes caretIn{from{transform:none}}.detail.closing .whobtn .caret{transition:transform .3s cubic-bezier(.4,0,.2,1)}}
 .eid{font-family:var(--mono);font-size:.85rem;color:var(--gold);white-space:nowrap}
 .starbtn{border:0;background:none;padding:2px 4px;font-size:1.25rem;line-height:1;color:var(--line);cursor:pointer}
 .starbtn[aria-pressed="true"]{color:var(--star)}
@@ -1094,7 +1100,7 @@ function detail(c){
   const items=c.items.map(i=>'<li style="--itier:'+tier(i.p)+'"><span class="k">'+esc(i.k)+'</span><span class="v"><span><span class="mono">'+esc(i.cur)+'</span> <span class="muted">/ '+esc(i.tgt)+'</span></span><span class="bar"><i style="width:'+i.p.toFixed(1)+'%"></i></span></span><span class="p">'+Math.round(i.p)+'</span></li>').join('');
   const score=c.hy?'<div class="score"><b>'+c.hy.total+'</b><div class="chips">'+hitChips(c.hy)+'</div><small>유효 부옵 명중 · '+(c.hyCustom?'내가 설정한 유효 옵션':'HoYoLAB 추천 옵션')+(c.sh?' · 세팅 탭 기준 '+c.sh.total:'')+'</small></div>':'';
   const rec=c.rec.length?'<div class="rec"><h4>주옵 추천</h4><ul>'+c.rec.map(recLine).join('')+'</ul></div>':'';
-  return '<div class="detail-head" style="--tier:'+tier(c.total)+'"><div class="who"><h3>'+esc(c.name)+'</h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.routes?'<span class="buildtag">루트 '+(c.ri+1)+' · '+esc(c.routes[c.ri].label)+(c.routes[c.ri].alt?' (대체)':'')+' 기준</span>':c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
+  return '<div class="detail-head" data-close style="--tier:'+tier(c.total)+'"><div class="who"><h3><button type="button" class="whobtn" data-close aria-expanded="true" title="누르면 접혀요"><span class="caret" aria-hidden="true">▸</span>'+esc(c.name)+'</button></h3>'+(c.rank>0?'<span class="eid">+ '+c.rank+'</span>':'')+(c.routes?'<span class="buildtag">루트 '+(c.ri+1)+' · '+esc(c.routes[c.ri].label)+(c.routes[c.ri].alt?' (대체)':'')+' 기준</span>':c.build?'<span class="buildtag">'+esc(c.build)+'</span>':'')+'</div>'
     +'<div class="pctbox"><span class="pct">'+(c.total==null?'—':c.total.toFixed(1)+'<span style="font-size:.55em">%</span>')+'</span><span class="pct-l">'+(c.total==null?'목표 수치 없음':'수치 달성률 · <b class="grade">'+grade(c.total)[0]+'</b>')+dl+'</span></div>'
     +'<button type="button" class="close" data-close aria-label="닫기">✕</button>'
     +(c.total==null?'':'<div class="bar"><i style="width:'+c.total.toFixed(1)+'%"></i></div>')+'</div>'
@@ -1121,19 +1127,39 @@ function routeBlock(c){
   }).join('');
   return '<div class="routes"><h4>세팅 루트</h4><p>시트에서 이 캐릭터는 '+c.routes.length+'줄이라 줄마다 루트로 나눴어요. 루트를 누르면 그 루트의 O/X·수치·주옵 추천이 펼쳐지고, 맨 위 달성률과 카드 막대도 마지막에 연 루트 기준으로 바뀌어요. 빈 칸은 바로 위 줄 값을 그대로 썼어요.</p>'+rows+'</div>';
 }
-// 펼친 캐릭터의 상세를, 그 캐릭터가 있는 줄 바로 아래에 가로 전체 폭으로 끼워 넣음
-function placePanel(){
-  const old=$('detail'); if(old) old.remove();
+const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DUR=420;
+function slideIn(el,from){
+  if(RM()) return Promise.resolve();
+  const h=el.offsetHeight; el.style.clipPath='inset(-12px -4px 0 -4px)';
+  const a=el.animate([{height:(from||0)+'px',marginTop:from?'2px':'0px'},{height:h+'px',marginTop:'2px'}],{duration:DUR,easing:'cubic-bezier(.4,0,.2,1)'});
+  if(!from) el.animate([{opacity:0},{opacity:1}],{duration:DUR*0.7,easing:'ease-out'});
+  else for(const ch of el.children) ch.animate([{opacity:0},{opacity:1}],{duration:DUR*0.8,easing:'ease-out'});
+  return a.finished.then(()=>{el.style.clipPath=''}).catch(()=>{});
+}
+function slideOut(el){
+  el.removeAttribute('id'); el.classList.add('closing'); el.setAttribute('aria-hidden','true'); el.inert=true;
+  if(RM()){ el.remove(); return; }
+  el.style.clipPath='inset(-12px -4px 0 -4px)';
+  const a=el.animate([{height:el.offsetHeight+'px',marginTop:'2px',opacity:1},{height:'0px',marginTop:'0px',opacity:0}],{duration:DUR*0.85,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
+  a.finished.then(()=>el.remove()).catch(()=>el.remove());
+}
+// 펼친 캐릭터의 상세를, 그 캐릭터가 있는 줄 바로 아래에 가로 전체 폭으로 끼워 넣음. anim이면 스르륵 열고 닫음
+function placePanel(anim){
+  if(!anim) document.querySelectorAll('.detail.closing').forEach(x=>x.remove());
+  const old=$('detail');
   document.querySelectorAll('.tile.open').forEach(x=>{x.classList.remove('open');x.querySelector('.tile-main').setAttribute('aria-expanded','false')});
   const c=state.open&&(state.list||[]).find(x=>x.name===state.open);
-  if(!c){state.open=null;return null}
-  const tiles=[...document.querySelectorAll('#grid .tile')], i=tiles.findIndex(x=>x.dataset.tile===c.name);
-  if(i<0) return null;
+  const tiles=[...document.querySelectorAll('#grid .tile')], i=c?tiles.findIndex(x=>x.dataset.tile===c.name):-1;
+  if(!c||i<0){ state.open=c?state.open:null; if(old){ anim?slideOut(old):old.remove(); } return null; }
   const top=tiles[i].offsetTop; let last=i; while(last+1<tiles.length&&tiles[last+1].offsetTop===top) last++;
-  const el=document.createElement('section'); el.id='detail'; el.className='detail'; el.setAttribute('aria-label',c.name+' 상세');
-  el.innerHTML=detail(c); tiles[last].after(el);
+  let el, from=0;
+  if(old && anim && old.previousElementSibling===tiles[last]){ el=old; from=old.offsetHeight; }   // 같은 줄: 패널을 그대로 두고 내용만 바꿈
+  else { if(old){ anim?slideOut(old):old.remove(); } el=document.createElement('section'); el.id='detail'; el.className='detail'; tiles[last].after(el); }
+  el.setAttribute('aria-label',c.name+' 상세'); el.innerHTML=detail(c);
   tiles[i].classList.add('open'); tiles[i].querySelector('.tile-main').setAttribute('aria-expanded','true');
   el.style.setProperty('--caret-x',(tiles[i].offsetLeft-el.offsetLeft+tiles[i].offsetWidth/2)+'px');
+  el._ready = anim ? slideIn(el,from) : Promise.resolve();
   return el;
 }
 function status(id,msg,kind){const s=$(id);s.textContent=msg;s.className='status '+(kind||'')}
@@ -1193,8 +1219,8 @@ $('grid').addEventListener('click',e=>{
   const o=e.target.closest('[data-open]');
   if(o){
     state.open=state.open===o.dataset.open?null:o.dataset.open;
-    const el=placePanel();
-    if(el) el.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+    const el=placePanel(true);
+    if(el) el._ready.then(()=>{ if(el.isConnected) el.scrollIntoView({block:'nearest',behavior:RM()?'auto':'smooth'}) });
     return;
   }
   const rt=e.target.closest('[data-route]');
@@ -1217,19 +1243,22 @@ $('grid').addEventListener('click',e=>{
   }
   if(e.target.closest('[data-close]')) closePanel();
 });
-const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 루트를 바꿨을 때: 머리(%·막대)·장비 현황·공통 칸만 새로 그리고, 카드 막대도 맞춤
 function refreshParts(c,det){
   const tmp=document.createElement('div'); tmp.innerHTML=detail(c);
-  const oldBar=det.querySelector('.detail-head .bar i'), w0=oldBar?oldBar.style.width:null;
+  const oldBar=det.querySelector('.detail-head .bar i'), w0=oldBar?oldBar.style.width:null, oldPct=(det.querySelector('.detail-head .pct')||{}).textContent;
   for(const sel of ['.detail-head','.gearsec','.common']){ const o=det.querySelector(sel), n=tmp.querySelector(sel); if(o&&n) o.replaceWith(n); }
+  const pe=det.querySelector('.detail-head .pct'), t0=parseFloat(oldPct), t1=c.total;
+  if(pe&&t1!=null&&!isNaN(t0)&&!RM()){ const st=performance.now(), d=420;
+    const step=now=>{ const k=Math.min(1,(now-st)/d), e=1-Math.pow(1-k,3); pe.innerHTML=(t0+(t1-t0)*e).toFixed(1)+'<span style="font-size:.55em">%</span>'; if(k<1&&pe.isConnected) requestAnimationFrame(step); };
+    requestAnimationFrame(step); }
   const nb=det.querySelector('.detail-head .bar i');
   if(nb&&w0!=null&&!RM()){ const w1=nb.style.width; nb.style.width=w0; requestAnimationFrame(()=>requestAnimationFrame(()=>{nb.style.width=w1})); }
   const edge=document.querySelector('.tile[data-tile="'+CSS.escape(c.name)+'"] .edge');
   if(edge){ const ei=edge.querySelector('i'); if(c.total==null) edge.innerHTML=''; else if(ei){ ei.style.width=c.total.toFixed(1)+'%'; ei.style.background=tier(c.total); } else edge.innerHTML='<i style="width:'+c.total.toFixed(1)+'%;background:'+tier(c.total)+'"></i>'; }
 }
 function closePanel(){
-  const n=state.open; state.open=null; placePanel();
+  const n=state.open; state.open=null; placePanel(true);
   const b=n&&document.querySelector('[data-open="'+CSS.escape(n)+'"]'); if(b) b.focus();
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.open) closePanel(); });
